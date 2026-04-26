@@ -187,11 +187,11 @@ function renderNoteList() {
       class="glass-card p-3.5 ${note.id === selectedId ? 'glass-card--active' : ''}"
       data-id="${note.id}"
     >
-      <div class="text-sm font-semibold text-white leading-snug mb-1 truncate">
+      <div class="text-sm font-semibold text-white/90 leading-snug mb-1 truncate">
         ${escapeHtml(note.title)}
       </div>
       <div class="flex items-center gap-2 mb-2">
-        <span class="text-xs text-white/40">${note.date}</span>
+        <span class="text-xs text-white/35">${note.date}</span>
         <span class="tag">${categoryLabel(note.category)}</span>
       </div>
       <div class="flex flex-wrap gap-1">
