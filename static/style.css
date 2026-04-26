@@ -1,0 +1,185 @@
+/* ===== ベース ===== */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #05102b 0%, #0d2260 45%, #0a5a96 100%);
+  font-family: 'Segoe UI', 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+  color: white;
+}
+
+/* 背景の装飾 */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  width: 600px; height: 600px;
+  background: rgba(56, 130, 246, 0.18);
+  top: -150px; left: -150px;
+}
+body::after {
+  width: 500px; height: 500px;
+  background: rgba(14, 165, 233, 0.15);
+  bottom: -100px; right: -100px;
+}
+
+#app { position: relative; z-index: 1; }
+
+/* ===== ガラス共通 ===== */
+.glass {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+/* ===== ノートカード ===== */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateX(3px);
+}
+.glass-card.glass-card--active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(147, 197, 253, 0.5);
+}
+
+/* ===== インプット ===== */
+.glass-input {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: white;
+  outline: none;
+  width: 100%;
+  display: block;
+  transition: background 0.2s, border-color 0.2s;
+}
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(147, 197, 253, 0.6);
+}
+.glass-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+/* ===== ボタン ===== */
+.btn-primary {
+  background: rgba(59, 130, 246, 0.45);
+  border: 1px solid rgba(147, 197, 253, 0.4);
+  border-radius: 9px;
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-primary:hover {
+  background: rgba(59, 130, 246, 0.7);
+  transform: scale(1.04);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(252, 165, 165, 0.3);
+  border-radius: 9px;
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.6);
+  transform: scale(1.04);
+}
+
+/* ===== タグ ===== */
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(147, 197, 253, 0.13);
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: default;
+}
+button.tag {
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+button.tag:hover {
+  background: rgba(147, 197, 253, 0.25);
+}
+.tag--active {
+  background: rgba(59, 130, 246, 0.4) !important;
+  border-color: rgba(147, 197, 253, 0.6) !important;
+}
+
+/* ===== スクロールバー ===== */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+/* ===== Markdown レンダリング ===== */
+.markdown-body h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.6rem; }
+.markdown-body h2 {
+  font-size: 1.15rem; font-weight: 600;
+  margin-top: 1.4rem; margin-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 0.3rem;
+}
+.markdown-body h3 { font-size: 1rem; font-weight: 600; margin-top: 1rem; }
+.markdown-body p { margin-bottom: 0.75rem; line-height: 1.75; color: rgba(255, 255, 255, 0.85); }
+.markdown-body ul,
+.markdown-body ol { padding-left: 1.5rem; margin-bottom: 0.75rem; color: rgba(255, 255, 255, 0.85); }
+.markdown-body li { margin-bottom: 0.25rem; }
+.markdown-body code {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.85em;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+.markdown-body pre {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+.markdown-body pre code { background: none; padding: 0; }
+.markdown-body blockquote {
+  border-left: 3px solid rgba(147, 197, 253, 0.5);
+  padding-left: 14px;
+  margin: 0.6rem 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+.markdown-body strong { color: #93c5fd; }
+.markdown-body a { color: #7dd3fc; text-decoration: underline; }
+.markdown-body table { border-collapse: collapse; width: 100%; margin-bottom: 0.75rem; }
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
+  text-align: left;
+}
+.markdown-body th { background: rgba(59, 130, 246, 0.2); }
