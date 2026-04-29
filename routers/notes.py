@@ -11,12 +11,14 @@ def list_notes(q: str = ''):
     conn = get_db()
     if q:
         try:
+            # FTS5 の仮想テーブルで全文検索し、rowid 経由で notes の全カラムを取得する
             rows = conn.execute("""
                 SELECT n.* FROM notes n
                 WHERE n.id IN (SELECT rowid FROM notes_fts WHERE notes_fts MATCH ?)
                 ORDER BY n.updated_at DESC
             """, (q,)).fetchall()
         except Exception:
+            # クエリに特殊文字が含まれると FTS5 が例外を投げるため、LIKE 検索にフォールバック
             rows = conn.execute(
                 "SELECT * FROM notes WHERE title LIKE ? OR content LIKE ? ORDER BY updated_at DESC",
                 (f'%{q}%', f'%{q}%')
@@ -43,9 +45,11 @@ def create_note(note: NoteCreate):
     conn = get_db()
     cur = conn.execute(
         "INSERT INTO notes (title, category, tags, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        # tags はリストを JSON 文字列に変換して保存。ensure_ascii=False で日本語をそのまま格納
         (note.title, note.category, json.dumps(note.tags, ensure_ascii=False), note.content, ts, ts)
     )
     conn.commit()
+    # lastrowid: INSERT で採番された自動インクリメント ID
     row = conn.execute("SELECT * FROM notes WHERE id = ?", (cur.lastrowid,)).fetchone()
     conn.close()
     return row_to_note(row)
@@ -58,6 +62,7 @@ def update_note(note_id: int, note: NoteUpdate):
         conn.close()
         raise HTTPException(status_code=404, detail="Note not found")
 
+    # None でないフィールドだけを更新対象に絞る（部分更新）
     fields: dict = {}
     if note.title is not None:
         fields['title'] = note.title
@@ -69,6 +74,7 @@ def update_note(note_id: int, note: NoteUpdate):
         fields['content'] = note.content
 
     if fields:
+        # 更新対象フィールドから SET 句を動的に組み立てる
         set_clause = ', '.join(f"{k} = ?" for k in fields) + ", updated_at = ?"
         values = list(fields.values()) + [now(), note_id]
         conn.execute(f"UPDATE notes SET {set_clause} WHERE id = ?", values)

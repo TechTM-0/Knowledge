@@ -1,12 +1,13 @@
+// カテゴリの表示ラベルマッピング
 const CATEGORY_LABELS = { memo: 'メモ', idea: 'アイデア', research: '調査' };
 
 // ===== 状態 =====
-let notes = [];
-let filteredNotes = [];
-let selectedNote = null;
+let notes = [];           // API から取得した全ノートのキャッシュ
+let filteredNotes = [];   // カテゴリ・検索で絞り込んだ表示用サブセット
+let selectedNote = null;  // 現在メインエリアに表示中のノート
 let currentCategory = 'all';
 let isEditMode = false;
-let autoSaveTimer = null;
+let autoSaveTimer = null; // debounce 用タイマーID
 
 // ===== DOM 参照 =====
 const noteList     = document.getElementById('noteList');
@@ -26,6 +27,7 @@ const newNoteBtn           = document.getElementById('newNoteBtn');
 const noteCategorySelect   = document.getElementById('noteCategorySelect');
 
 // ===== API ヘルパー =====
+// fetch のラッパー。204 No Content は null を返し、エラー時は例外を投げる
 async function api(path, options = {}) {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
@@ -63,6 +65,7 @@ function bindEvents() {
 }
 
 // ===== ノート一覧の描画 =====
+// filteredNotes をもとにサイドバーのカードを再描画する。innerHTML の置き換え後にイベントを再登録する
 function renderNoteList() {
   noteCount.textContent = filteredNotes.length;
 
@@ -91,6 +94,7 @@ function renderNoteList() {
     </div>
   `).join('');
 
+  // innerHTML 置き換えで既存リスナーが消えるため毎回再登録する
   noteList.querySelectorAll('[data-id]').forEach(el => {
     el.addEventListener('click', () => selectNote(Number(el.dataset.id)));
   });
@@ -105,6 +109,7 @@ function selectNote(id) {
 
   noteTitle.textContent = note.title;
   noteDate.textContent = note.created_at.slice(0, 10);
+  // marked.parse: Markdown テキストを HTML に変換して表示
   noteContent.innerHTML = marked.parse(note.content);
   noteEditor.value = note.content;
 
@@ -133,6 +138,7 @@ function showEditMode() {
   noteContent.classList.add('hidden');
   noteEditor.classList.remove('hidden');
   noteEditor.classList.add('flex');
+  // 表示モードのテキスト span を隠し、セレクトボックスを表示する
   noteCategory.classList.add('hidden');
   noteCategorySelect.classList.remove('hidden');
   noteCategorySelect.value = selectedNote?.category ?? 'memo';
@@ -147,12 +153,15 @@ function toggleEditMode() {
 }
 
 // ===== 自動保存 =====
+// 入力のたびにタイマーをリセットし、800ms 無入力が続いたら保存する（debounce パターン）
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(async () => {
     if (!selectedNote) return;
     const content = noteEditor.value;
     const title = extractTitle(content);
+    // 保存前のタグを退避する。auto-save はコンテンツのみ更新するが、
+    // レスポンスで selectedNote を上書きするとタグが失われる競合が起きるため
     const currentTags = selectedNote.tags;
     const updated = await api(`/api/notes/${selectedNote.id}`, {
       method: 'PUT',
@@ -168,12 +177,14 @@ function scheduleAutoSave() {
   }, 800);
 }
 
+// Markdown の最初の # 見出しをタイトルとして使う
 function extractTitle(content) {
   const match = content.match(/^#\s+(.+)/m);
   return match ? match[1].trim() : '新しいノート';
 }
 
 // ===== フィルター =====
+// notes 配列をカテゴリ・検索キーワードでクライアント側絞り込みする
 function applyFilters() {
   const query = searchInput.value.trim();
   filteredNotes = notes.filter(note => {
@@ -205,6 +216,7 @@ async function openNewNote() {
       content: '# 新しいノート\n\nここに内容を書いてください...',
     }),
   });
+  // loadNotes で一覧を最新化してから選択・編集モードへ
   await loadNotes();
   selectNote(note.id);
   showEditMode();
@@ -236,6 +248,8 @@ async function changeCategory() {
 }
 
 // ===== タグ描画・操作 =====
+// editMode=true: 各タグに削除ボタン＋入力フィールドを表示
+// editMode=false: タグをバッジ表示のみ
 function renderTags(editMode) {
   const tags = selectedNote?.tags ?? [];
   if (editMode) {
@@ -247,6 +261,7 @@ function renderTags(editMode) {
         </span>
       `).join('') +
       `<input id="tagInput" type="text" placeholder="タグを追加..." class="tag-input">`;
+    // innerHTML 置き換え後にリスナーを再登録する
     document.getElementById('tagInput').addEventListener('keydown', handleTagInput);
     noteTags.querySelectorAll('[data-remove-tag]').forEach(btn => {
       btn.addEventListener('click', () => removeTag(Number(btn.dataset.removeTag)));
@@ -257,16 +272,18 @@ function renderTags(editMode) {
 }
 
 function handleTagInput(e) {
-  if (e.isComposing) return; // IME確定中は無視
+  // IME で日本語確定中の Enter を誤検知しないようにする
+  if (e.isComposing) return;
   if (e.key !== 'Enter' && e.key !== ',') return;
   e.preventDefault();
   const val = e.target.value.replace(/,/g, '').trim();
   if (!val) return;
-  e.target.value = '';
+  e.target.value = ''; // 送信と同時に入力欄をクリア
   addTag(val);
 }
 
 async function addTag(tagName) {
+  // 重複タグは追加しない
   if (!selectedNote || selectedNote.tags.includes(tagName)) return;
   const updated = await api(`/api/notes/${selectedNote.id}`, {
     method: 'PUT',
@@ -299,6 +316,7 @@ function categoryLabel(cat) {
   return CATEGORY_LABELS[cat] || cat;
 }
 
+// innerHTML にユーザー入力を埋め込む際の XSS 対策
 function escapeHtml(str) {
   return str.replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
