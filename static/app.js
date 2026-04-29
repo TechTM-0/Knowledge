@@ -7,7 +7,8 @@ let filteredNotes = [];   // カテゴリ・検索で絞り込んだ表示用サ
 let selectedNote = null;  // 現在メインエリアに表示中のノート
 let currentCategory = 'all';
 let isEditMode = false;
-let autoSaveTimer = null; // debounce 用タイマーID
+let autoSaveTimer = null; // debounce 用タイマーID（自動保存）
+let searchTimer = null;   // debounce 用タイマーID（検索）
 
 // ===== DOM 参照 =====
 const noteList     = document.getElementById('noteList');
@@ -55,7 +56,7 @@ function bindEvents() {
   newNoteBtn.addEventListener('click', openNewNote);
   editBtn.addEventListener('click', toggleEditMode);
   deleteBtn.addEventListener('click', deleteNote);
-  searchInput.addEventListener('input', () => applyFilters());
+  searchInput.addEventListener('input', scheduleSearch);
   noteEditor.addEventListener('input', scheduleAutoSave);
   noteCategorySelect.addEventListener('change', changeCategory);
 
@@ -184,17 +185,35 @@ function extractTitle(content) {
 }
 
 // ===== フィルター =====
-// notes 配列をカテゴリ・検索キーワードでクライアント側絞り込みする
-function applyFilters() {
+
+// タイプ中のデバウンス。300ms 無入力で API 検索を実行する
+function scheduleSearch() {
   const query = searchInput.value.trim();
-  filteredNotes = notes.filter(note => {
-    const matchCategory = currentCategory === 'all' || note.category === currentCategory;
-    const matchQuery = !query ||
-      note.title.includes(query) ||
-      note.content.includes(query) ||
-      note.tags.some(t => t.includes(query));
-    return matchCategory && matchQuery;
-  });
+  clearTimeout(searchTimer);
+  if (query) {
+    searchTimer = setTimeout(() => searchFromApi(query), 300);
+  } else {
+    // クエリが消えたらローカルキャッシュに即時戻す
+    applyFilters();
+  }
+}
+
+// サーバー側 FTS5 検索（title / content / tags を横断）
+async function searchFromApi(query) {
+  const results = await api(`/api/notes?q=${encodeURIComponent(query)}`);
+  applyCategory(results);
+}
+
+// クエリなし時: ローカルキャッシュにカテゴリフィルタだけ適用
+function applyFilters() {
+  applyCategory(notes);
+}
+
+// 検索結果またはローカルキャッシュにカテゴリフィルタを適用して描画
+function applyCategory(noteList) {
+  filteredNotes = currentCategory === 'all'
+    ? noteList
+    : noteList.filter(n => n.category === currentCategory);
   renderNoteList();
 }
 

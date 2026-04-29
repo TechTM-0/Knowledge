@@ -11,17 +11,19 @@ def list_notes(q: str = ''):
     conn = get_db()
     if q:
         try:
-            # FTS5 の仮想テーブルで全文検索し、rowid 経由で notes の全カラムを取得する
+            # FTS5 で title/content を全文検索 + tags の LIKE マッチを OR で結合
+            # trigram トークナイザーは3文字未満のクエリで空結果を返すが tags LIKE は機能する
             rows = conn.execute("""
                 SELECT n.* FROM notes n
                 WHERE n.id IN (SELECT rowid FROM notes_fts WHERE notes_fts MATCH ?)
+                   OR n.tags LIKE ?
                 ORDER BY n.updated_at DESC
-            """, (q,)).fetchall()
+            """, (q, f'%{q}%')).fetchall()
         except Exception:
-            # クエリに特殊文字が含まれると FTS5 が例外を投げるため、LIKE 検索にフォールバック
+            # クエリに FTS5 の特殊文字が含まれる場合は LIKE 検索にフォールバック
             rows = conn.execute(
-                "SELECT * FROM notes WHERE title LIKE ? OR content LIKE ? ORDER BY updated_at DESC",
-                (f'%{q}%', f'%{q}%')
+                "SELECT * FROM notes WHERE title LIKE ? OR content LIKE ? OR tags LIKE ? ORDER BY updated_at DESC",
+                (f'%{q}%', f'%{q}%', f'%{q}%')
             ).fetchall()
     else:
         rows = conn.execute("SELECT * FROM notes ORDER BY updated_at DESC").fetchall()
