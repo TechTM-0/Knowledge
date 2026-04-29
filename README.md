@@ -50,8 +50,12 @@ GEMINI_API_KEY=your_api_key_here
 
 ```
 Knowledge/
-├── main.py            # FastAPI エントリーポイント・APIルート
+├── main.py            # FastAPI エントリーポイント・ルーター登録
 ├── database.py        # DB初期化・接続・ヘルパー
+├── schemas.py         # Pydantic スキーマ（リクエスト/レスポンス型）
+├── routers/
+│   ├── __init__.py
+│   └── notes.py       # ノート CRUD エンドポイント
 ├── requirements.txt   # 依存パッケージ
 ├── knowledge.db       # SQLiteデータベース（Git管理外）
 ├── static/

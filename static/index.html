@@ -75,6 +75,11 @@
           <div class="flex items-center gap-3 mt-1.5">
             <span id="noteDate" class="text-xs text-white/40"></span>
             <span id="noteCategory" class="tag"></span>
+            <select id="noteCategorySelect" class="tag hidden">
+              <option value="memo">メモ</option>
+              <option value="idea">アイデア</option>
+              <option value="research">調査</option>
+            </select>
           </div>
         </div>
         <div class="flex gap-2 shrink-0">
@@ -84,7 +89,7 @@
       </div>
 
       <!-- タグ一覧 -->
-      <div id="noteTags" class="px-6 py-2.5 flex gap-1.5 flex-wrap border-b border-white/10"></div>
+      <div id="noteTags" class="px-6 py-2.5 flex gap-1.5 flex-wrap items-center border-b border-white/10"></div>
 
       <!-- 表示モード -->
       <div id="noteContent" class="flex-1 overflow-y-auto px-6 py-4 markdown-body"></div>

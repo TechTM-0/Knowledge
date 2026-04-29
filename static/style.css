@@ -131,6 +131,33 @@ button.tag:hover {
   border-color: rgba(147, 197, 253, 0.6) !important;
 }
 
+/* select に .tag を適用したときのオプション背景 */
+select.tag {
+  cursor: pointer;
+}
+select.tag option {
+  background: #0a1a40;
+  color: white;
+}
+
+/* タグ追加インプット */
+.tag-input {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  border-radius: 999px;
+  color: white;
+  outline: none;
+  font-size: 11px;
+  padding: 2px 10px;
+  width: 100px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.tag-input:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(147, 197, 253, 0.6);
+}
+.tag-input::placeholder { color: rgba(255, 255, 255, 0.35); }
+
 /* ===== スクロールバー ===== */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

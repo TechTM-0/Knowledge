@@ -20,9 +20,10 @@ const noteCategory = document.getElementById('noteCategory');
 const noteTags     = document.getElementById('noteTags');
 const noteContent  = document.getElementById('noteContent');
 const noteEditor   = document.getElementById('noteEditor');
-const editBtn      = document.getElementById('editBtn');
-const deleteBtn    = document.getElementById('deleteBtn');
-const newNoteBtn   = document.getElementById('newNoteBtn');
+const editBtn              = document.getElementById('editBtn');
+const deleteBtn            = document.getElementById('deleteBtn');
+const newNoteBtn           = document.getElementById('newNoteBtn');
+const noteCategorySelect   = document.getElementById('noteCategorySelect');
 
 // ===== API ヘルパー =====
 async function api(path, options = {}) {
@@ -54,6 +55,7 @@ function bindEvents() {
   deleteBtn.addEventListener('click', deleteNote);
   searchInput.addEventListener('input', () => applyFilters());
   noteEditor.addEventListener('input', scheduleAutoSave);
+  noteCategorySelect.addEventListener('change', changeCategory);
 
   document.querySelectorAll('[data-category]').forEach(btn => {
     btn.addEventListener('click', () => setCategory(btn));
@@ -103,8 +105,6 @@ function selectNote(id) {
 
   noteTitle.textContent = note.title;
   noteDate.textContent = note.created_at.slice(0, 10);
-  noteCategory.textContent = categoryLabel(note.category);
-  noteTags.innerHTML = note.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
   noteContent.innerHTML = marked.parse(note.content);
   noteEditor.value = note.content;
 
@@ -121,17 +121,25 @@ function showViewMode() {
   noteContent.classList.remove('hidden');
   noteEditor.classList.add('hidden');
   noteEditor.classList.remove('flex');
+  noteCategory.textContent = categoryLabel(selectedNote?.category ?? 'memo');
+  noteCategory.classList.remove('hidden');
+  noteCategorySelect.classList.add('hidden');
   editBtn.textContent = '✏️ 編集';
   isEditMode = false;
+  renderTags(false);
 }
 
 function showEditMode() {
   noteContent.classList.add('hidden');
   noteEditor.classList.remove('hidden');
   noteEditor.classList.add('flex');
+  noteCategory.classList.add('hidden');
+  noteCategorySelect.classList.remove('hidden');
+  noteCategorySelect.value = selectedNote?.category ?? 'memo';
   editBtn.textContent = '👁️ 表示';
   isEditMode = true;
   noteEditor.focus();
+  renderTags(true);
 }
 
 function toggleEditMode() {
@@ -145,11 +153,13 @@ function scheduleAutoSave() {
     if (!selectedNote) return;
     const content = noteEditor.value;
     const title = extractTitle(content);
+    const currentTags = selectedNote.tags;
     const updated = await api(`/api/notes/${selectedNote.id}`, {
       method: 'PUT',
       body: JSON.stringify({ content, title }),
     });
-    selectedNote = updated;
+    // タグは addTag/removeTag が管理するので scheduleAutoSave では上書きしない
+    selectedNote = { ...updated, tags: currentTags };
     noteTitle.textContent = updated.title;
     noteContent.innerHTML = marked.parse(content);
     const idx = notes.findIndex(n => n.id === updated.id);
@@ -210,6 +220,78 @@ async function deleteNote() {
   noteView.classList.remove('flex');
   emptyState.classList.remove('hidden');
   await loadNotes();
+}
+
+// ===== カテゴリ変更 =====
+async function changeCategory() {
+  if (!selectedNote) return;
+  const updated = await api(`/api/notes/${selectedNote.id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ category: noteCategorySelect.value }),
+  });
+  selectedNote = updated;
+  const idx = notes.findIndex(n => n.id === updated.id);
+  if (idx !== -1) notes[idx] = updated;
+  renderNoteList();
+}
+
+// ===== タグ描画・操作 =====
+function renderTags(editMode) {
+  const tags = selectedNote?.tags ?? [];
+  if (editMode) {
+    noteTags.innerHTML =
+      tags.map((t, i) => `
+        <span class="tag" style="display:inline-flex;align-items:center;gap:4px;">
+          #${escapeHtml(t)}
+          <button data-remove-tag="${i}" style="line-height:1;color:rgba(255,255,255,0.5);" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">×</button>
+        </span>
+      `).join('') +
+      `<input id="tagInput" type="text" placeholder="タグを追加..." class="tag-input">`;
+    document.getElementById('tagInput').addEventListener('keydown', handleTagInput);
+    noteTags.querySelectorAll('[data-remove-tag]').forEach(btn => {
+      btn.addEventListener('click', () => removeTag(Number(btn.dataset.removeTag)));
+    });
+  } else {
+    noteTags.innerHTML = tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
+  }
+}
+
+function handleTagInput(e) {
+  if (e.isComposing) return; // IME確定中は無視
+  if (e.key !== 'Enter' && e.key !== ',') return;
+  e.preventDefault();
+  const val = e.target.value.replace(/,/g, '').trim();
+  if (!val) return;
+  e.target.value = '';
+  addTag(val);
+}
+
+async function addTag(tagName) {
+  if (!selectedNote || selectedNote.tags.includes(tagName)) return;
+  const updated = await api(`/api/notes/${selectedNote.id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ tags: [...selectedNote.tags, tagName] }),
+  });
+  selectedNote = updated;
+  const idx = notes.findIndex(n => n.id === updated.id);
+  if (idx !== -1) notes[idx] = updated;
+  renderTags(true);
+  document.getElementById('tagInput')?.focus();
+  renderNoteList();
+}
+
+async function removeTag(index) {
+  if (!selectedNote) return;
+  const updated = await api(`/api/notes/${selectedNote.id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ tags: selectedNote.tags.filter((_, i) => i !== index) }),
+  });
+  selectedNote = updated;
+  const idx = notes.findIndex(n => n.id === updated.id);
+  if (idx !== -1) notes[idx] = updated;
+  renderTags(true);
+  document.getElementById('tagInput')?.focus();
+  renderNoteList();
 }
 
 // ===== ユーティリティ =====
