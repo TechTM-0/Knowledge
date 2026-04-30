@@ -55,7 +55,9 @@ Knowledge/
 ├── schemas.py         # Pydantic スキーマ（リクエスト/レスポンス型）
 ├── routers/
 │   ├── __init__.py
-│   └── notes.py       # ノート CRUD エンドポイント
+│   ├── notes.py       # ノート CRUD エンドポイント
+│   ├── templates.py   # テンプレート CRUD エンドポイント
+│   └── generate.py    # Gemini API 連携・コンテンツ生成
 ├── requirements.txt   # 依存パッケージ
 ├── knowledge.db       # SQLiteデータベース（Git管理外）
 ├── static/

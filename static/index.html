@@ -21,9 +21,10 @@
         <div class="text-xs text-blue-300 font-medium tracking-widest mb-0.5">KNOWLEDGE</div>
         <div class="text-white text-lg font-bold leading-none">マイノート</div>
       </div>
-      <button class="btn-primary px-3 py-2 text-sm font-medium" id="newNoteBtn">
-        ＋ 新規
-      </button>
+      <div class="flex gap-2">
+        <button class="btn-primary px-3 py-2 text-sm font-medium" id="generateBtn">✨</button>
+        <button class="btn-primary px-3 py-2 text-sm font-medium" id="newNoteBtn">＋ 新規</button>
+      </div>
     </header>
 
     <!-- 検索 -->
@@ -105,6 +106,44 @@
 
   </main>
 
+</div>
+
+<!-- ===== 生成モーダル ===== -->
+<div id="generateModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <!-- 背景オーバーレイ -->
+  <div id="generateOverlay" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+  <div class="glass rounded-2xl p-6 w-full max-w-lg relative z-10 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <div class="text-white font-bold text-lg">✨ AI でノートを生成</div>
+      <button id="generateCloseBtn" class="text-white/40 hover:text-white text-xl leading-none">×</button>
+    </div>
+
+    <!-- テンプレート選択 -->
+    <div class="flex flex-col gap-1.5">
+      <label class="text-xs text-white/60">テンプレート</label>
+      <select id="templateSelect" class="glass-input px-3 py-2 text-sm">
+        <option value="">テンプレートを選択...</option>
+      </select>
+    </div>
+
+    <!-- プロンプト入力 -->
+    <div class="flex flex-col gap-1.5">
+      <label class="text-xs text-white/60">トピック・内容</label>
+      <textarea
+        id="generatePrompt"
+        class="glass-input px-3 py-2 text-sm resize-none"
+        rows="4"
+        placeholder="例: Python の非同期処理について調査した内容..."
+      ></textarea>
+    </div>
+
+    <!-- 生成ボタン -->
+    <button id="generateSubmitBtn" class="btn-primary px-4 py-2.5 text-sm font-medium w-full">
+      生成する
+    </button>
+    <div id="generateError" class="hidden text-red-400 text-xs text-center"></div>
+  </div>
 </div>
 
 <script src="/static/app.js"></script>

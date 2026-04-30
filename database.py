@@ -49,6 +49,16 @@ def init_db():
             VALUES ('delete', old.id, old.title, old.content);
         END;
 
+        -- templates: ユーザー定義のテンプレートを管理するテーブル
+        CREATE TABLE IF NOT EXISTS templates (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL,
+            format_type TEXT NOT NULL DEFAULT 'article',  -- 'article' | 'slide'（将来拡張用）
+            content     TEXT NOT NULL DEFAULT '',
+            created_at  TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
+        );
+
         -- notes_au: UPDATE 後は「旧エントリ削除 → 新エントリ追加」で更新（FTS5 は UPDATE を直接サポートしない）
         CREATE TRIGGER IF NOT EXISTS notes_au AFTER UPDATE ON notes BEGIN
             INSERT INTO notes_fts(notes_fts, rowid, title, content)

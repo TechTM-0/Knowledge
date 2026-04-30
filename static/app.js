@@ -26,6 +26,14 @@ const editBtn              = document.getElementById('editBtn');
 const deleteBtn            = document.getElementById('deleteBtn');
 const newNoteBtn           = document.getElementById('newNoteBtn');
 const noteCategorySelect   = document.getElementById('noteCategorySelect');
+const generateBtn          = document.getElementById('generateBtn');
+const generateModal        = document.getElementById('generateModal');
+const generateOverlay      = document.getElementById('generateOverlay');
+const generateCloseBtn     = document.getElementById('generateCloseBtn');
+const generateSubmitBtn    = document.getElementById('generateSubmitBtn');
+const generatePrompt       = document.getElementById('generatePrompt');
+const generateError        = document.getElementById('generateError');
+const templateSelect       = document.getElementById('templateSelect');
 
 // ===== API ヘルパー =====
 // fetch のラッパー。204 No Content は null を返し、エラー時は例外を投げる
@@ -59,6 +67,10 @@ function bindEvents() {
   searchInput.addEventListener('input', scheduleSearch);
   noteEditor.addEventListener('input', scheduleAutoSave);
   noteCategorySelect.addEventListener('change', changeCategory);
+  generateBtn.addEventListener('click', openGenerateModal);
+  generateCloseBtn.addEventListener('click', closeGenerateModal);
+  generateOverlay.addEventListener('click', closeGenerateModal);
+  generateSubmitBtn.addEventListener('click', submitGenerate);
 
   document.querySelectorAll('[data-category]').forEach(btn => {
     btn.addEventListener('click', () => setCategory(btn));
@@ -328,6 +340,69 @@ async function removeTag(index) {
   renderTags(true);
   document.getElementById('tagInput')?.focus();
   renderNoteList();
+}
+
+// ===== AI 生成 =====
+async function openGenerateModal() {
+  // テンプレート一覧を取得してセレクトボックスを更新する
+  const templates = await api('/api/templates');
+  templateSelect.innerHTML = '<option value="">テンプレートを選択...</option>' +
+    templates.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  generatePrompt.value = '';
+  generateError.classList.add('hidden');
+  generateModal.classList.remove('hidden');
+  generatePrompt.focus();
+}
+
+function closeGenerateModal() {
+  generateModal.classList.add('hidden');
+}
+
+async function submitGenerate() {
+  const templateId = Number(templateSelect.value);
+  const prompt = generatePrompt.value.trim();
+
+  if (!templateId) {
+    showGenerateError('テンプレートを選択してください');
+    return;
+  }
+  if (!prompt) {
+    showGenerateError('トピックを入力してください');
+    return;
+  }
+
+  generateSubmitBtn.textContent = '生成中...';
+  generateSubmitBtn.disabled = true;
+  generateError.classList.add('hidden');
+
+  try {
+    // Gemini API でコンテンツを生成
+    const { content } = await api('/api/generate', {
+      method: 'POST',
+      body: JSON.stringify({ template_id: templateId, prompt }),
+    });
+
+    // 生成されたコンテンツで新しいノートを作成
+    const title = content.match(/^#\s+(.+)/m)?.[1]?.trim() ?? prompt;
+    const note = await api('/api/notes', {
+      method: 'POST',
+      body: JSON.stringify({ title, category: 'research', tags: [], content }),
+    });
+
+    closeGenerateModal();
+    await loadNotes();
+    selectNote(note.id);
+  } catch (e) {
+    showGenerateError(`生成に失敗しました: ${e.message}`);
+  } finally {
+    generateSubmitBtn.textContent = '生成する';
+    generateSubmitBtn.disabled = false;
+  }
+}
+
+function showGenerateError(msg) {
+  generateError.textContent = msg;
+  generateError.classList.remove('hidden');
 }
 
 // ===== ユーティリティ =====

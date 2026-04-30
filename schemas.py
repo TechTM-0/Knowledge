@@ -16,3 +16,21 @@ class NoteUpdate(BaseModel):
     category: Optional[str] = None
     tags: Optional[list[str]] = None
     content: Optional[str] = None
+
+
+class TemplateCreate(BaseModel):
+    name: str
+    format_type: str = 'article'
+    content: str = ''
+
+
+class TemplateUpdate(BaseModel):
+    """None のフィールドは変更しない（NoteUpdate と同じ部分更新パターン）。"""
+    name: Optional[str] = None
+    format_type: Optional[str] = None
+    content: Optional[str] = None
+
+
+class GenerateRequest(BaseModel):
+    template_id: int
+    prompt: str  # ユーザーが入力するトピック・指示

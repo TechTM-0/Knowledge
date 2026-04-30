@@ -45,6 +45,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+### `routers/templates.py` — テンプレートCRUDエンドポイント
+
+prefix: `/api/templates`。ノートと同じ部分更新パターン。`format_type` フィールドで将来のスライド形式に対応できる設計。
+
+---
+
+### `routers/generate.py` — Gemini API 連携
+
+`POST /api/generate` — テンプレートIDとプロンプトを受け取り、Gemini にテンプレート形式を維持したコンテンツを生成させて返す。`GEMINI_API_KEY` 環境変数が必須。
+
+---
+
 ### `routers/notes.py` — ノートCRUDエンドポイント
 
 prefix: `/api/notes`
