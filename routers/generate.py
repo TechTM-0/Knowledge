@@ -1,4 +1,5 @@
 import os
+import json
 from google import genai
 from fastapi import APIRouter, HTTPException
 from database import get_db
@@ -22,8 +23,10 @@ def generate_note(req: GenerateRequest):
 
     template_content = row["content"]
     template_name = row["name"]
+    params = json.loads(row["params"])
 
-    # Gemini にテンプレートの形式を維持しながらコンテンツを生成させる
+    params_section = f"\n# 生成パラメータ（必ず従うこと）\n{json.dumps(params, ensure_ascii=False, indent=2)}" if params else ""
+
     prompt = f"""以下のテンプレート「{template_name}」の形式・構造・見出しを維持しながら、
 次のトピックについての記事を日本語で生成してください。
 
@@ -31,7 +34,7 @@ def generate_note(req: GenerateRequest):
 {req.prompt}
 
 # テンプレート（この構造に従って生成すること）
-{template_content}
+{template_content}{params_section}
 
 テンプレートの見出し・セクション構成をそのまま使い、内容だけをトピックに合わせて書いてください。"""
 

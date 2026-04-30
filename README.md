@@ -9,29 +9,34 @@
       │
  [FastAPI]
 ├── ノートのCRUD
+├── テンプレートのCRUD
 ├── 全文検索（SQLite FTS5）
-├── ベクトル検索（意味的な類似検索）
 └── 文章生成（Google Gemini API）
       │
  [SQLite]  ← 全データがローカルに保存
 ```
 
-## 機能
+## 実装済み機能
 
 - ノートの作成・編集・削除
 - タグ・カテゴリによる整理
 - 全文検索（SQLite FTS5）
-- 意味的な類似検索（ベクトル検索）
-- 文章生成・補助（Google Gemini API）
+- テンプレート管理（作成・編集・削除）
+- AI文章生成（Google Gemini API）
 - Markdown対応
+
+## 未実装
+
+- スライドレンダラー（`format_type=slide` 時の iframe + React レンダリング）
+- ベクトル検索（意味的な類似検索）
 
 ## 技術スタック
 
 | レイヤー | 技術 |
 |---------|------|
 | バックエンド | FastAPI（Python） |
-| データベース | SQLite（FTS5 + ベクトル検索） |
-| AI（文章生成） | Google Gemini API（無料枠） |
+| データベース | SQLite（FTS5） |
+| AI（文章生成） | Google Gemini API（無料枠、gemini-2.5-flash） |
 
 ## セットアップ
 
@@ -44,6 +49,12 @@
 
 ```
 GEMINI_API_KEY=your_api_key_here
+```
+
+### サーバー起動（Windows PowerShell）
+
+```powershell
+python -m uvicorn main:app --reload
 ```
 
 ## フォルダ構成

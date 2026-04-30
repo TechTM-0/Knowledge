@@ -12,20 +12,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ブラウザ（localhost）→ FastAPI → SQLite
 ```
 
-### 主な機能
+### 実装済み機能
 
 - ノートの作成・編集・削除
 - タグ・カテゴリによる整理
 - 全文検索（SQLite FTS5）
-- ベクトル検索（意味的な類似検索）
-- 文章生成（Google Gemini API）
-- Markdown対応
+- テンプレート管理（作成・編集・削除・params キーバリュー設定）
+- AI文章生成（Google Gemini API）— 編集モードで ✨ AI ボタンから起動、現在のノートに流し込む
+
+### 未実装
+
+- **スライドレンダラー**: `format_type=slide` のとき、Gemini に React コンポーネントを生成させ、iframe + `@babel/standalone` + React/Lucide CDN でレンダリングする
+- **ベクトル検索**: 意味的な類似検索（候補: text-embedding-004 または sentence-transformers）
 
 ### 技術スタック
 
 - バックエンド: FastAPI（Python）
-- DB: SQLite（FTS5 + ベクトル検索）
-- AI文章生成: Google Gemini API（無料枠、`gemini-2.0-flash` を使用）
+- DB: SQLite（FTS5）
+- AI文章生成: Google Gemini API（無料枠、`gemini-2.5-flash` を使用）
 - 環境変数: `GEMINI_API_KEY`
 
 ## ファイル構成とコード解説
@@ -42,18 +46,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |--------|------|
 | `NoteCreate` | ノート作成時のリクエストボディ（title, category, tags, content） |
 | `NoteUpdate` | ノート更新時のリクエストボディ（全フィールドOptional） |
+| `TemplateCreate` | テンプレート作成（name, format_type, content, params） |
+| `TemplateUpdate` | テンプレート更新（全フィールドOptional） |
+| `GenerateRequest` | AI生成リクエスト（template_id, prompt） |
 
 ---
 
 ### `routers/templates.py` — テンプレートCRUDエンドポイント
 
-prefix: `/api/templates`。ノートと同じ部分更新パターン。`format_type` フィールドで将来のスライド形式に対応できる設計。
+prefix: `/api/templates`。ノートと同じ部分更新パターン。`params` フィールド（JSON dict）でテンプレートごとの Gemini 生成指示を保持。`format_type` は `article` / `slide` の2種。
 
 ---
 
 ### `routers/generate.py` — Gemini API 連携
 
-`POST /api/generate` — テンプレートIDとプロンプトを受け取り、Gemini にテンプレート形式を維持したコンテンツを生成させて返す。`GEMINI_API_KEY` 環境変数が必須。
+`POST /api/generate` — テンプレートID・プロンプトを受け取り、テンプレートの `content`（見出し構造）と `params`（JSON ブロック）をプロンプトに埋め込んで Gemini に送信。`GEMINI_API_KEY` 環境変数が必須。現状 `format_type` はプロンプトに反映していない（スライドレンダラー実装時に対応）。
 
 ---
 
@@ -76,7 +83,7 @@ prefix: `/api/notes`
 | 関数 | 役割 |
 |------|------|
 | `get_db()` | SQLite接続を返す。`row_factory = sqlite3.Row` でdict風アクセス可能にしている |
-| `init_db()` | アプリ起動時に1回だけ呼ぶ。`notes` テーブル・FTS5仮想テーブル・3つのトリガーを作成 |
+| `init_db()` | アプリ起動時に1回だけ呼ぶ。`notes` / `templates` テーブル・FTS5仮想テーブル・3つのトリガーを作成 |
 | `now()` | 現在日時を `'YYYY-MM-DD HH:MM:SS'` 形式で返す。`created_at` / `updated_at` に使用 |
 | `row_to_note(row)` | DB行をdictに変換し、`tags`（JSON文字列）をPythonリストに変換して返す |
 
@@ -95,6 +102,8 @@ prefix: `/api/notes`
 | `selectedNote` | 現在選択中のノートオブジェクト |
 | `currentCategory` | 選択中カテゴリ（`'all'` / `'memo'` / `'idea'` / `'research'`） |
 | `autoSaveTimer` | 編集中の自動保存タイマーID |
+| `templates` | テンプレート一覧キャッシュ |
+| `editingTemplate` | テンプレート管理モーダルで編集中のテンプレート（null = 新規） |
 
 **主要関数**
 
@@ -107,17 +116,26 @@ prefix: `/api/notes`
 | `selectNote(id)` | `notes` 配列からノートを探してメインエリアに表示 |
 | `applyFilters()` | カテゴリ・検索キーワードでクライアント側絞り込みし `renderNoteList()` |
 | `scheduleAutoSave()` | 800ms debounce で `PUT /api/notes/{id}` を呼ぶ |
-| `extractTitle(content)` | Markdownの最初の `# 見出し` をタイトルとして抽出 |
 | `openNewNote()` | `POST /api/notes` でDB作成 → 一覧再取得 → 編集モードで開く |
 | `deleteNote()` | `DELETE /api/notes/{id}` → 一覧再取得 |
+| `openTemplateModal()` | テンプレート管理モーダルを開く（テンプレート一覧を取得して表示） |
+| `openTemplateForm(template)` | 右パネルのフォームに選択テンプレートを展開（null = 新規） |
+| `saveTemplate()` | テンプレートの作成または更新 |
+| `deleteTemplateItem()` | テンプレート削除 |
+| `openGenerateModal()` | AI生成モーダルを開く（編集モード時のみ ✨ ボタンで呼ばれる） |
+| `submitGenerate()` | Gemini API にリクエスト → 生成結果を現在のノートエディタに流し込む |
 | `escapeHtml(str)` | XSS対策のHTMLエスケープ |
+
+**UI フロー**
+- ✨ AI ボタンは編集モード時のみ表示（`showEditMode` / `showViewMode` で切り替え）
+- AI生成は新規ノート作成ではなく、**現在開いているノートの内容を上書き**する
 
 ---
 
 ### `static/index.html` — フロントエンド構造
 
 - Tailwind CSS（CDN）でレイアウト、`style.css` でガラスモーフィズムのカスタムスタイルを適用
-- 主要な要素IDと対応する変数: `noteList` / `searchInput` / `emptyState` / `noteView` / `noteEditor` / `noteContent`
+- モーダル: `#templateModal`（テンプレート管理）/ `#generateModal`（AI生成）の2つ
 
 ---
 
@@ -153,8 +171,8 @@ database.py       # DB接続・初期化・ヘルパー関数のみ
 schemas.py        # Pydantic スキーマ（リクエスト/レスポンス型）のみ
 routers/
   notes.py        # ノート CRUD エンドポイント
-  search.py       # 全文検索・ベクトル検索エンドポイント（Phase 3/4 で追加）
-  ai.py           # Gemini API 連携エンドポイント（Phase 5 で追加）
+  templates.py    # テンプレート CRUD エンドポイント
+  generate.py     # Gemini API 連携エンドポイント
 ```
 
 | ファイル | 書いてよいもの | 書いてはいけないもの |
@@ -170,9 +188,7 @@ routers/
 static/
   index.html      # HTML構造のみ
   style.css       # スタイルのみ
-  app.js          # 初期化（init）・イベント登録（bindEvents）のみ ← エントリポイント
-  api.js          # fetch ラッパー・全APIエンドポイント呼び出し（app.js が肥大化したら分離）
-  ui.js           # DOM描画・表示/非表示切り替え（app.js が肥大化したら分離）
+  app.js          # 全フロントエンドロジック（肥大化したら api.js / ui.js に分離）
 ```
 
 現状は `app.js` に集約。責務の混在が保守の妨げになると判断した場合に分離する。

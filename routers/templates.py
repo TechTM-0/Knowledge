@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException
 from database import get_db, now
 from schemas import TemplateCreate, TemplateUpdate
@@ -6,7 +7,9 @@ router = APIRouter(prefix="/api/templates", tags=["templates"])
 
 
 def row_to_template(row) -> dict:
-    return dict(row)
+    d = dict(row)
+    d['params'] = json.loads(d['params'])
+    return d
 
 
 @router.get("")
@@ -32,8 +35,8 @@ def create_template(template: TemplateCreate):
     ts = now()
     conn = get_db()
     cur = conn.execute(
-        "INSERT INTO templates (name, format_type, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-        (template.name, template.format_type, template.content, ts, ts)
+        "INSERT INTO templates (name, format_type, content, params, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (template.name, template.format_type, template.content, json.dumps(template.params), ts, ts)
     )
     conn.commit()
     row = conn.execute("SELECT * FROM templates WHERE id = ?", (cur.lastrowid,)).fetchone()
@@ -55,6 +58,8 @@ def update_template(template_id: int, template: TemplateUpdate):
         fields['format_type'] = template.format_type
     if template.content is not None:
         fields['content'] = template.content
+    if template.params is not None:
+        fields['params'] = json.dumps(template.params)
 
     if fields:
         set_clause = ', '.join(f"{k} = ?" for k in fields) + ", updated_at = ?"

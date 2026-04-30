@@ -9,6 +9,8 @@ let currentCategory = 'all';
 let isEditMode = false;
 let autoSaveTimer = null; // debounce 用タイマーID（自動保存）
 let searchTimer = null;   // debounce 用タイマーID（検索）
+let templates = [];       // テンプレート一覧キャッシュ
+let editingTemplate = null; // 現在編集中のテンプレート（null = 新規）
 
 // ===== DOM 参照 =====
 const noteList     = document.getElementById('noteList');
@@ -34,6 +36,22 @@ const generateSubmitBtn    = document.getElementById('generateSubmitBtn');
 const generatePrompt       = document.getElementById('generatePrompt');
 const generateError        = document.getElementById('generateError');
 const templateSelect       = document.getElementById('templateSelect');
+const templateBtn          = document.getElementById('templateBtn');
+const templateModal        = document.getElementById('templateModal');
+const templateOverlay      = document.getElementById('templateOverlay');
+const templateCloseBtn     = document.getElementById('templateCloseBtn');
+const templateList         = document.getElementById('templateList');
+const templateNewBtn       = document.getElementById('templateNewBtn');
+const templateFormEmpty    = document.getElementById('templateFormEmpty');
+const templateForm         = document.getElementById('templateForm');
+const tmplName             = document.getElementById('tmplName');
+const tmplFormatType       = document.getElementById('tmplFormatType');
+const tmplContent          = document.getElementById('tmplContent');
+const tmplParamRows        = document.getElementById('tmplParamRows');
+const tmplAddParamBtn      = document.getElementById('tmplAddParamBtn');
+const tmplSaveBtn          = document.getElementById('tmplSaveBtn');
+const tmplDeleteBtn        = document.getElementById('tmplDeleteBtn');
+const tmplError            = document.getElementById('tmplError');
 
 // ===== API ヘルパー =====
 // fetch のラッパー。204 No Content は null を返し、エラー時は例外を投げる
@@ -71,6 +89,13 @@ function bindEvents() {
   generateCloseBtn.addEventListener('click', closeGenerateModal);
   generateOverlay.addEventListener('click', closeGenerateModal);
   generateSubmitBtn.addEventListener('click', submitGenerate);
+  templateBtn.addEventListener('click', openTemplateModal);
+  templateCloseBtn.addEventListener('click', closeTemplateModal);
+  templateOverlay.addEventListener('click', closeTemplateModal);
+  templateNewBtn.addEventListener('click', () => openTemplateForm(null));
+  tmplAddParamBtn.addEventListener('click', () => addParamRow('', ''));
+  tmplSaveBtn.addEventListener('click', saveTemplate);
+  tmplDeleteBtn.addEventListener('click', deleteTemplateItem);
 
   document.querySelectorAll('[data-category]').forEach(btn => {
     btn.addEventListener('click', () => setCategory(btn));
@@ -144,6 +169,7 @@ function showViewMode() {
   noteCategorySelect.classList.add('hidden');
   editBtn.textContent = '✏️ 編集';
   isEditMode = false;
+  generateBtn.classList.add('hidden');
   renderTags(false);
 }
 
@@ -157,6 +183,7 @@ function showEditMode() {
   noteCategorySelect.value = selectedNote?.category ?? 'memo';
   editBtn.textContent = '👁️ 表示';
   isEditMode = true;
+  generateBtn.classList.remove('hidden');
   noteEditor.focus();
   renderTags(true);
 }
@@ -342,6 +369,127 @@ async function removeTag(index) {
   renderNoteList();
 }
 
+// ===== テンプレート管理 =====
+async function openTemplateModal() {
+  templates = await api('/api/templates');
+  renderTemplateList();
+  templateFormEmpty.classList.remove('hidden');
+  templateForm.classList.add('hidden');
+  templateModal.classList.remove('hidden');
+}
+
+function closeTemplateModal() {
+  templateModal.classList.add('hidden');
+}
+
+function renderTemplateList() {
+  if (templates.length === 0) {
+    templateList.innerHTML = '<div class="text-white/30 text-xs text-center py-6">テンプレートなし</div>';
+    return;
+  }
+  templateList.innerHTML = templates.map(t => `
+    <button
+      class="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 transition-colors ${editingTemplate?.id === t.id ? 'bg-white/10 text-white' : ''}"
+      data-tid="${t.id}"
+    >${escapeHtml(t.name)}<span class="ml-1.5 text-xs text-white/40">${t.format_type}</span></button>
+  `).join('');
+  templateList.querySelectorAll('[data-tid]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = templates.find(x => x.id === Number(btn.dataset.tid));
+      if (t) openTemplateForm(t);
+    });
+  });
+}
+
+function openTemplateForm(template) {
+  editingTemplate = template;
+  renderTemplateList();
+
+  tmplName.value = template?.name ?? '';
+  tmplFormatType.value = template?.format_type ?? 'article';
+  tmplContent.value = template?.content ?? '';
+  renderParamsEditor(template?.params ?? {});
+  tmplError.classList.add('hidden');
+  tmplDeleteBtn.classList.toggle('hidden', !template);
+
+  templateFormEmpty.classList.add('hidden');
+  templateForm.classList.remove('hidden');
+  tmplName.focus();
+}
+
+function renderParamsEditor(params) {
+  tmplParamRows.innerHTML = '';
+  Object.entries(params).forEach(([k, v]) => addParamRow(k, v));
+}
+
+function addParamRow(key, value) {
+  const row = document.createElement('div');
+  row.className = 'flex gap-1.5';
+  row.innerHTML = `
+    <input type="text" placeholder="キー（例: 枚数）" value="${escapeHtml(key)}"
+      class="glass-input px-2 py-1.5 text-xs flex-1" data-param="key">
+    <input type="text" placeholder="値（例: 8枚）" value="${escapeHtml(value)}"
+      class="glass-input px-2 py-1.5 text-xs flex-1" data-param="val">
+    <button class="text-white/40 hover:text-red-400 text-lg leading-none px-1" data-remove>×</button>
+  `;
+  row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+  tmplParamRows.appendChild(row);
+}
+
+function collectParams() {
+  const params = {};
+  tmplParamRows.children && Array.from(tmplParamRows.children).forEach(row => {
+    const key = row.querySelector('[data-param="key"]')?.value.trim();
+    const val = row.querySelector('[data-param="val"]')?.value.trim();
+    if (key) params[key] = val ?? '';
+  });
+  return params;
+}
+
+async function saveTemplate() {
+  const name = tmplName.value.trim();
+  if (!name) { showTmplError('テンプレート名を入力してください'); return; }
+
+  const body = {
+    name,
+    format_type: tmplFormatType.value,
+    content: tmplContent.value,
+    params: collectParams(),
+  };
+
+  try {
+    if (editingTemplate) {
+      await api(`/api/templates/${editingTemplate.id}`, { method: 'PUT', body: JSON.stringify(body) });
+    } else {
+      await api('/api/templates', { method: 'POST', body: JSON.stringify(body) });
+    }
+    templates = await api('/api/templates');
+    const saved = editingTemplate
+      ? templates.find(t => t.id === editingTemplate.id)
+      : templates[0];
+    editingTemplate = saved ?? null;
+    renderTemplateList();
+    tmplError.classList.add('hidden');
+  } catch (e) {
+    showTmplError(`保存に失敗しました: ${e.message}`);
+  }
+}
+
+async function deleteTemplateItem() {
+  if (!editingTemplate) return;
+  await api(`/api/templates/${editingTemplate.id}`, { method: 'DELETE' });
+  templates = await api('/api/templates');
+  editingTemplate = null;
+  renderTemplateList();
+  templateFormEmpty.classList.remove('hidden');
+  templateForm.classList.add('hidden');
+}
+
+function showTmplError(msg) {
+  tmplError.textContent = msg;
+  tmplError.classList.remove('hidden');
+}
+
 // ===== AI 生成 =====
 async function openGenerateModal() {
   // テンプレート一覧を取得してセレクトボックスを更新する
@@ -382,16 +530,10 @@ async function submitGenerate() {
       body: JSON.stringify({ template_id: templateId, prompt }),
     });
 
-    // 生成されたコンテンツで新しいノートを作成
-    const title = content.match(/^#\s+(.+)/m)?.[1]?.trim() ?? prompt;
-    const note = await api('/api/notes', {
-      method: 'POST',
-      body: JSON.stringify({ title, category: 'research', tags: [], content }),
-    });
-
+    // 生成されたコンテンツを現在の編集中ノートに流し込む
+    noteEditor.value = content;
+    scheduleAutoSave();
     closeGenerateModal();
-    await loadNotes();
-    selectNote(note.id);
   } catch (e) {
     showGenerateError(`生成に失敗しました: ${e.message}`);
   } finally {

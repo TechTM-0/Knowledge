@@ -55,6 +55,7 @@ def init_db():
             name        TEXT NOT NULL,
             format_type TEXT NOT NULL DEFAULT 'article',  -- 'article' | 'slide'（将来拡張用）
             content     TEXT NOT NULL DEFAULT '',
+            params      TEXT NOT NULL DEFAULT '{}',       -- format_type ごとの生成ルールを JSON で保持
             created_at  TEXT NOT NULL,
             updated_at  TEXT NOT NULL
         );
@@ -68,6 +69,13 @@ def init_db():
         END;
     """)
     conn.commit()
+
+    # 既存DBに params カラムがなければ追加（初回以外のマイグレーション）
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(templates)").fetchall()]
+    if "params" not in columns:
+        conn.execute("ALTER TABLE templates ADD COLUMN params TEXT NOT NULL DEFAULT '{}'")
+        conn.commit()
+
     conn.close()
 
 

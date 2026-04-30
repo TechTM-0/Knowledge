@@ -22,7 +22,7 @@
         <div class="text-white text-lg font-bold leading-none">マイノート</div>
       </div>
       <div class="flex gap-2">
-        <button class="btn-primary px-3 py-2 text-sm font-medium" id="generateBtn">✨</button>
+        <button class="btn-primary px-3 py-2 text-sm font-medium" id="templateBtn">📋</button>
         <button class="btn-primary px-3 py-2 text-sm font-medium" id="newNoteBtn">＋ 新規</button>
       </div>
     </header>
@@ -84,6 +84,7 @@
           </div>
         </div>
         <div class="flex gap-2 shrink-0">
+          <button id="generateBtn" class="btn-primary px-3 py-1.5 text-xs hidden">✨ AI</button>
           <button id="editBtn" class="btn-primary px-3 py-1.5 text-xs">✏️ 編集</button>
           <button id="deleteBtn" class="btn-danger px-3 py-1.5 text-xs">🗑️</button>
         </div>
@@ -106,6 +107,79 @@
 
   </main>
 
+</div>
+
+<!-- ===== テンプレート管理モーダル ===== -->
+<div id="templateModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div id="templateOverlay" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+  <div class="glass rounded-2xl w-full max-w-3xl relative z-10 flex overflow-hidden" style="height:72vh">
+
+    <!-- 左パネル: テンプレート一覧 -->
+    <div class="w-52 shrink-0 flex flex-col border-r border-white/10">
+      <div class="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+        <span class="text-white font-bold text-sm">📋 テンプレート</span>
+        <button id="templateCloseBtn" class="text-white/40 hover:text-white text-xl leading-none">×</button>
+      </div>
+      <div id="templateList" class="flex-1 overflow-y-auto py-2"></div>
+      <div class="p-3 border-t border-white/10">
+        <button id="templateNewBtn" class="btn-primary w-full py-2 text-xs font-medium">＋ 新規作成</button>
+      </div>
+    </div>
+
+    <!-- 右パネル: 編集フォーム -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <div id="templateFormEmpty" class="flex-1 flex items-center justify-center text-white/30 text-sm">
+        テンプレートを選択または新規作成
+      </div>
+
+      <div id="templateForm" class="hidden flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+
+          <!-- 名前 -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs text-white/60">テンプレート名</label>
+            <input id="tmplName" type="text" class="glass-input px-3 py-2 text-sm" placeholder="例: 技術記事">
+          </div>
+
+          <!-- フォーマット種別 -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs text-white/60">フォーマット</label>
+            <select id="tmplFormatType" class="glass-input px-3 py-2 text-sm">
+              <option value="article">article</option>
+              <option value="slide">slide</option>
+            </select>
+          </div>
+
+          <!-- テンプレート本文 -->
+          <div class="flex flex-col gap-1.5 flex-1">
+            <label class="text-xs text-white/60">テンプレート本文（Markdown 見出し構造）</label>
+            <textarea id="tmplContent" class="glass-input px-3 py-2 text-sm resize-none flex-1 font-mono" style="min-height:120px" placeholder="# タイトル&#10;## はじめに&#10;## 本文&#10;## まとめ"></textarea>
+          </div>
+
+          <!-- 生成パラメータ -->
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-white/60">生成パラメータ（Gemini への指示）</label>
+              <button id="tmplAddParamBtn" class="text-xs text-blue-300 hover:text-blue-200">＋ 追加</button>
+            </div>
+            <div id="tmplParamRows" class="flex flex-col gap-1.5"></div>
+          </div>
+
+        </div>
+
+        <!-- フォームフッター -->
+        <div class="p-4 border-t border-white/10 flex gap-2 justify-between">
+          <button id="tmplDeleteBtn" class="btn-danger px-4 py-2 text-xs">削除</button>
+          <div class="flex gap-2">
+            <div id="tmplError" class="hidden text-red-400 text-xs self-center"></div>
+            <button id="tmplSaveBtn" class="btn-primary px-5 py-2 text-xs font-medium">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <!-- ===== 生成モーダル ===== -->

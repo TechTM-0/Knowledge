@@ -22,6 +22,7 @@ class TemplateCreate(BaseModel):
     name: str
     format_type: str = 'article'
     content: str = ''
+    params: dict = {}
 
 
 class TemplateUpdate(BaseModel):
@@ -29,6 +30,7 @@ class TemplateUpdate(BaseModel):
     name: Optional[str] = None
     format_type: Optional[str] = None
     content: Optional[str] = None
+    params: Optional[dict] = None
 
 
 class GenerateRequest(BaseModel):
