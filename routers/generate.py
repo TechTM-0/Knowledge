@@ -1,4 +1,5 @@
 import os
+import re
 import json
 from google import genai
 from fastapi import APIRouter, HTTPException
@@ -22,21 +23,15 @@ def generate_note(req: GenerateRequest):
         raise HTTPException(status_code=404, detail="Template not found")
 
     template_content = row["content"]
-    template_name = row["name"]
+    format_type = row["format_type"]
     params = json.loads(row["params"])
 
-    params_section = f"\n# 生成パラメータ（必ず従うこと）\n{json.dumps(params, ensure_ascii=False, indent=2)}" if params else ""
+    params_section = f"\n\n{json.dumps(params, ensure_ascii=False, indent=2)}" if params else ""
 
-    prompt = f"""以下のテンプレート「{template_name}」の形式・構造・見出しを維持しながら、
-次のトピックについての記事を日本語で生成してください。
+    prompt = f"""{template_content}{params_section}
 
 # トピック
-{req.prompt}
-
-# テンプレート（この構造に従って生成すること）
-{template_content}{params_section}
-
-テンプレートの見出し・セクション構成をそのまま使い、内容だけをトピックに合わせて書いてください。"""
+{req.prompt}"""
 
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
@@ -44,4 +39,17 @@ def generate_note(req: GenerateRequest):
         contents=prompt,
     )
 
-    return {"content": response.text}
+    content = response.text.strip()
+    if format_type == "slide":
+        # jsx/js タグ付きコードフェンスを優先、なければタグなしを抽出
+        match = re.search(r'```(?:jsx|javascript|js)\n(.*?)```', content, re.DOTALL)
+        if not match:
+            match = re.search(r'```\n(.*?)```', content, re.DOTALL)
+        if match:
+            content = match.group(1).strip()
+        # ブラウザ環境で無効な import / export 文を除去する
+        content = re.sub(r'^import\s+.*$', '', content, flags=re.MULTILINE)
+        content = re.sub(r'^export\s+default\s+\w+;?\s*$', '', content, flags=re.MULTILINE)
+        content = content.strip()
+
+    return {"content": content, "format_type": format_type}

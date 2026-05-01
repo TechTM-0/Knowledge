@@ -17,13 +17,14 @@ def init_db():
     conn = get_db()
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS notes (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            title      TEXT NOT NULL DEFAULT '新しいノート',
-            category   TEXT NOT NULL DEFAULT 'memo',
-            tags       TEXT NOT NULL DEFAULT '[]',  -- JSON配列を文字列で保存
-            content    TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            title       TEXT NOT NULL DEFAULT '新しいノート',
+            category    TEXT NOT NULL DEFAULT 'memo',
+            tags        TEXT NOT NULL DEFAULT '[]',  -- JSON配列を文字列で保存
+            content     TEXT NOT NULL DEFAULT '',
+            format_type TEXT NOT NULL DEFAULT 'article',  -- 'article' | 'slide'
+            created_at  TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
         );
 
         -- FTS5: SQLite 組み込みの全文検索エンジン
@@ -74,6 +75,12 @@ def init_db():
     columns = [row[1] for row in conn.execute("PRAGMA table_info(templates)").fetchall()]
     if "params" not in columns:
         conn.execute("ALTER TABLE templates ADD COLUMN params TEXT NOT NULL DEFAULT '{}'")
+        conn.commit()
+
+    # 既存DBに notes.format_type カラムがなければ追加
+    note_columns = [row[1] for row in conn.execute("PRAGMA table_info(notes)").fetchall()]
+    if "format_type" not in note_columns:
+        conn.execute("ALTER TABLE notes ADD COLUMN format_type TEXT NOT NULL DEFAULT 'article'")
         conn.commit()
 
     conn.close()

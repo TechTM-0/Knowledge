@@ -8,6 +8,7 @@ class NoteCreate(BaseModel):
     category: str = 'memo'
     tags: list[str] = []
     content: str = ''
+    format_type: str = 'article'
 
 
 class NoteUpdate(BaseModel):
@@ -16,6 +17,7 @@ class NoteUpdate(BaseModel):
     category: Optional[str] = None
     tags: Optional[list[str]] = None
     content: Optional[str] = None
+    format_type: Optional[str] = None
 
 
 class TemplateCreate(BaseModel):

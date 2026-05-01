@@ -46,9 +46,8 @@ def create_note(note: NoteCreate):
     ts = now()
     conn = get_db()
     cur = conn.execute(
-        "INSERT INTO notes (title, category, tags, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        # tags はリストを JSON 文字列に変換して保存。ensure_ascii=False で日本語をそのまま格納
-        (note.title, note.category, json.dumps(note.tags, ensure_ascii=False), note.content, ts, ts)
+        "INSERT INTO notes (title, category, tags, content, format_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (note.title, note.category, json.dumps(note.tags, ensure_ascii=False), note.content, note.format_type, ts, ts)
     )
     conn.commit()
     # lastrowid: INSERT で採番された自動インクリメント ID
@@ -74,6 +73,8 @@ def update_note(note_id: int, note: NoteUpdate):
         fields['tags'] = json.dumps(note.tags, ensure_ascii=False)
     if note.content is not None:
         fields['content'] = note.content
+    if note.format_type is not None:
+        fields['format_type'] = note.format_type
 
     if fields:
         # 更新対象フィールドから SET 句を動的に組み立てる
