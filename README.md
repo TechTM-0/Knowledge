@@ -24,10 +24,10 @@
 - テンプレート管理（作成・編集・削除）
 - AI文章生成（Google Gemini API）
 - Markdown対応
+- スライドレンダラー（`format_type=slide` 時に iframe + Babel + React CDN でレンダリング）
 
 ## 未実装
 
-- スライドレンダラー（`format_type=slide` 時の iframe + React レンダリング）
 - ベクトル検索（意味的な類似検索）
 
 ## 技術スタック
@@ -74,7 +74,12 @@ Knowledge/
 ├── static/
 │   ├── index.html     # フロントエンド（構造）
 │   ├── style.css      # スタイル（ガラスモーフィズム）
-│   └── app.js         # フロントエンドロジック
+│   ├── state.js       # 共有状態オブジェクト（全モジュールが参照）
+│   ├── utils.js       # 共通ユーティリティ（api・escapeHtml・extractTitle 等）
+│   ├── slide.js       # スライドレンダラー（buildSlideHtml・showSlideTab 等）
+│   ├── templates.js   # テンプレート管理 UI ロジック
+│   ├── generate.js    # AI生成モーダル ロジック
+│   └── app.js         # メイン（ノートCRUD・タグ・検索・初期化）
 ├── .env               # 環境変数（Git管理外）
 ├── .gitignore
 ├── README.md

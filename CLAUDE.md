@@ -19,10 +19,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 全文検索（SQLite FTS5）
 - テンプレート管理（作成・編集・削除・params キーバリュー設定）
 - AI文章生成（Google Gemini API）— 編集モードで ✨ AI ボタンから起動、現在のノートに流し込む
+- スライドレンダラー — `format_type=slide` のノートを iframe + `@babel/standalone` + React CDN でレンダリング。スライド／コードのタブ切り替えあり
 
 ### 未実装
 
-- **スライドレンダラー**: `format_type=slide` のとき、Gemini に React コンポーネントを生成させ、iframe + `@babel/standalone` + React/Lucide CDN でレンダリングする
 - **ベクトル検索**: 意味的な類似検索（候補: text-embedding-004 または sentence-transformers）
 
 ### 技術スタック
@@ -60,7 +60,7 @@ prefix: `/api/templates`。ノートと同じ部分更新パターン。`params`
 
 ### `routers/generate.py` — Gemini API 連携
 
-`POST /api/generate` — テンプレートID・プロンプトを受け取り、テンプレートの `content`（見出し構造）と `params`（JSON ブロック）をプロンプトに埋め込んで Gemini に送信。`GEMINI_API_KEY` 環境変数が必須。現状 `format_type` はプロンプトに反映していない（スライドレンダラー実装時に対応）。
+`POST /api/generate` — テンプレートID・プロンプトを受け取り、テンプレートの `content`（見出し構造）と `params`（JSON ブロック）をプロンプトに埋め込んで Gemini に送信。`GEMINI_API_KEY` 環境変数が必須。`format_type=slide` のときはレスポンスの JSX コードから `import` / `export default` 文を除去してブラウザ実行可能な形に整形する。
 
 ---
 
@@ -91,50 +91,111 @@ prefix: `/api/notes`
 
 ---
 
-### `static/app.js` — フロントエンドロジック
+### `static/state.js` — 共有状態
 
-**状態変数**
+全モジュールが `import { state } from './state.js'` で参照する単一のミュータブルオブジェクト。
 
-| 変数 | 役割 |
-|------|------|
-| `notes` | APIから取得した全ノートの配列 |
+| フィールド | 役割 |
+|-----------|------|
+| `notes` | API から取得した全ノートの配列 |
 | `filteredNotes` | カテゴリ・検索で絞り込んだ表示用配列 |
 | `selectedNote` | 現在選択中のノートオブジェクト |
 | `currentCategory` | 選択中カテゴリ（`'all'` / `'memo'` / `'idea'` / `'research'`） |
-| `autoSaveTimer` | 編集中の自動保存タイマーID |
+| `isEditMode` | 編集モード中かどうか |
+| `autoSaveTimer` / `searchTimer` | debounce 用タイマーID |
 | `templates` | テンプレート一覧キャッシュ |
 | `editingTemplate` | テンプレート管理モーダルで編集中のテンプレート（null = 新規） |
+| `slideViewTab` | スライドノートの表示タブ（`'slide'` / `'code'`） |
+| `generateCancelled` | AI生成リトライをキャンセルするフラグ |
+
+---
+
+### `static/utils.js` — 共通ユーティリティ
+
+副作用なしの純粋関数・定数のみ。全モジュールが参照する。
+
+| エクスポート | 役割 |
+|------------|------|
+| `CATEGORY_LABELS` | カテゴリ名のマッピング定数 |
+| `api(path, options)` | fetch のラッパー。204はnull返却、エラーは例外 |
+| `escapeHtml(str)` | XSS対策のHTMLエスケープ |
+| `extractTitle(content)` | Markdown の最初の `#` 見出しをタイトルとして抽出 |
+| `categoryLabel(cat)` | カテゴリキーを表示名に変換 |
+
+---
+
+### `static/slide.js` — スライドレンダラー
+
+`format_type=slide` のノートに関する描画ロジック。
+
+| エクスポート | 役割 |
+|------------|------|
+| `buildSlideHtml(jsxCode)` | JSX コードを受け取り、iframe の `srcdoc` に設定する完全な HTML 文字列を生成（React・Babel CDN を含む） |
+| `showSlideTab(tab)` | `'slide'` / `'code'` タブの切り替え。`display:none` を使わず flex で潰すことで iframe の React 初期化状態を維持する |
+| `renderSlide()` | view モードでスライドを表示。2段階 rAF で React 初期化タイミングを保証する |
+| `hideSlide()` | スライドタブ・コンテナを完全に非表示（article ノートの view モードで呼ばれる） |
+| `collapseSlide()` | コンテナのみ折り畳む（編集モード移行時に呼ばれる。iframe の状態は維持） |
+
+---
+
+### `static/templates.js` — テンプレート管理
+
+`#templateModal` の開閉・一覧表示・フォーム操作を担当。
+
+| エクスポート | 役割 |
+|------------|------|
+| `openTemplateModal()` | テンプレート一覧を API 取得してモーダルを開く |
+| `closeTemplateModal()` | モーダルを閉じる |
+| `renderTemplateList()` | `state.templates` をもとに一覧を再描画（クリックは `app.js` のイベント委譲で処理） |
+| `openTemplateForm(template)` | 右パネルのフォームに選択テンプレートを展開（`null` = 新規） |
+| `addParamRow(key, value)` | params キーバリュー行を動的追加 |
+| `collectParams()` | フォームの params 行を `{key: value}` オブジェクトに集約 |
+| `saveTemplate()` | テンプレートの作成または更新 |
+| `deleteTemplateItem()` | テンプレート削除 |
+
+---
+
+### `static/generate.js` — AI生成
+
+`#generateModal` の開閉・Gemini API リクエスト・リトライを担当。
+
+| エクスポート | 役割 |
+|------------|------|
+| `openGenerateModal()` | テンプレート一覧を取得してモーダルを開く（編集モード時のみ ✨ ボタンで呼ばれる） |
+| `closeGenerateModal()` | モーダルを閉じ、`generateCancelled` フラグをセットしてリトライを即中断 |
+| `submitGenerate(onSuccess)` | Gemini API にリクエスト → 生成結果を現在のノートに保存 → `onSuccess()`（`renderNoteList`）を呼ぶ。エラー時は2秒待ちで最大20回リトライ |
+
+---
+
+### `static/app.js` — メインモジュール
+
+ノートCRUD・タグ操作・検索・フィルター・モード切替・イベント登録を担当。各サブモジュールをインポートして統合する。
 
 **主要関数**
 
 | 関数 | 役割 |
 |------|------|
-| `api(path, options)` | fetch のラッパー。204はnull返却、エラーは例外 |
 | `init()` | 起動時に `loadNotes()` とイベント登録を実行 |
 | `loadNotes()` | `GET /api/notes` で全件取得し `applyFilters()` を呼ぶ |
-| `renderNoteList()` | `filteredNotes` をもとにサイドバーのカード一覧を再描画 |
-| `selectNote(id)` | `notes` 配列からノートを探してメインエリアに表示 |
-| `applyFilters()` | カテゴリ・検索キーワードでクライアント側絞り込みし `renderNoteList()` |
+| `bindEvents()` | 全イベントリスナーを登録。`noteList` / `noteTags` / `templateList` はイベント委譲を使用 |
+| `renderNoteList()` | `state.filteredNotes` をもとにサイドバーのカード一覧を再描画 |
+| `selectNote(id)` | `state.notes` からノートを探してメインエリアに表示 |
+| `showViewMode()` / `showEditMode()` | 表示・編集モードの切り替え。スライドノートは `slide.js` の関数に委譲 |
 | `scheduleAutoSave()` | 800ms debounce で `PUT /api/notes/{id}` を呼ぶ |
-| `openNewNote()` | `POST /api/notes` でDB作成 → 一覧再取得 → 編集モードで開く |
-| `deleteNote()` | `DELETE /api/notes/{id}` → 一覧再取得 |
-| `openTemplateModal()` | テンプレート管理モーダルを開く（テンプレート一覧を取得して表示） |
-| `openTemplateForm(template)` | 右パネルのフォームに選択テンプレートを展開（null = 新規） |
-| `saveTemplate()` | テンプレートの作成または更新 |
-| `deleteTemplateItem()` | テンプレート削除 |
-| `openGenerateModal()` | AI生成モーダルを開く（編集モード時のみ ✨ ボタンで呼ばれる） |
-| `submitGenerate()` | Gemini API にリクエスト → 生成結果を現在のノートエディタに流し込む |
-| `escapeHtml(str)` | XSS対策のHTMLエスケープ |
+| `applyFilters()` / `applyCategory()` | カテゴリ・検索キーワードでクライアント側絞り込みし `renderNoteList()` |
+| `renderTags(editMode)` | タグをバッジ表示（view）または削除ボタン付き表示（edit）で描画 |
 
 **UI フロー**
-- ✨ AI ボタンは編集モード時のみ表示（`showEditMode` / `showViewMode` で切り替え）
+- ✨ AI ボタンは編集モード時のみ表示
 - AI生成は新規ノート作成ではなく、**現在開いているノートの内容を上書き**する
+- スライドノートは view モードで iframe レンダリング、code タブでソース表示
 
 ---
 
 ### `static/index.html` — フロントエンド構造
 
 - Tailwind CSS（CDN）でレイアウト、`style.css` でガラスモーフィズムのカスタムスタイルを適用
+- `<script type="module">` で `app.js` を読み込む（ES Modules によりグローバル汚染なし）
 - モーダル: `#templateModal`（テンプレート管理）/ `#generateModal`（AI生成）の2つ
 
 ---
@@ -149,6 +210,7 @@ prefix: `/api/notes`
 | `.btn-primary` | 新規作成・編集ボタン（インディゴ系） |
 | `.btn-danger` | 削除ボタン（赤系） |
 | `.tag` | カテゴリ・タグの丸バッジ |
+| `.tag-remove-btn` | タグ削除ボタン（`×`）のスタイル。hover で白く変化 |
 | `.markdown-body` | Markdownレンダリング領域のスタイル一式 |
 
 ---
@@ -186,13 +248,18 @@ routers/
 
 ```
 static/
-  index.html      # HTML構造のみ
+  index.html      # HTML構造のみ（type="module" で app.js を読み込む）
   style.css       # スタイルのみ
-  app.js          # 全フロントエンドロジック（肥大化したら api.js / ui.js に分離）
+  state.js        # 共有状態オブジェクト（全モジュールが import して参照・更新）
+  utils.js        # 副作用なしの共通ユーティリティ（api・escapeHtml 等）
+  slide.js        # スライドレンダラー（buildSlideHtml・showSlideTab 等）
+  templates.js    # テンプレート管理 UI ロジック
+  generate.js     # AI生成モーダルロジック
+  app.js          # メイン（ノートCRUD・タグ・検索・初期化・イベント登録）
 ```
 
-現状は `app.js` に集約。責務の混在が保守の妨げになると判断した場合に分離する。
-分離するときは ES Modules（`type="module"`）を使い、グローバル汚染を避ける。
+ES Modules（`type="module"`）を使用。グローバル変数汚染なし。
+新しい機能ドメインを追加する場合は新ファイルに分離し、`state.js` の共有状態を参照する。
 
 ### 責務の分離ルール
 
