@@ -11,6 +11,7 @@ let autoSaveTimer = null; // debounce 用タイマーID（自動保存）
 let searchTimer = null;   // debounce 用タイマーID（検索）
 let templates = [];       // テンプレート一覧キャッシュ
 let editingTemplate = null; // 現在編集中のテンプレート（null = 新規）
+let slideViewTab = 'slide'; // slide ノートの view モードで表示中のタブ（'slide' | 'code'）
 
 // ===== DOM 参照 =====
 const noteList     = document.getElementById('noteList');
@@ -24,6 +25,11 @@ const noteCategory = document.getElementById('noteCategory');
 const noteTags     = document.getElementById('noteTags');
 const noteContent  = document.getElementById('noteContent');
 const noteEditor   = document.getElementById('noteEditor');
+const slideTabs    = document.getElementById('slideTabs');
+const slideTabSlide = document.getElementById('slideTabSlide');
+const slideTabCode  = document.getElementById('slideTabCode');
+const slideFrame     = document.getElementById('slideFrame');
+const slideContainer = document.getElementById('slideContainer');
 const editBtn              = document.getElementById('editBtn');
 const deleteBtn            = document.getElementById('deleteBtn');
 const newNoteBtn           = document.getElementById('newNoteBtn');
@@ -90,6 +96,8 @@ function bindEvents() {
   generateCloseBtn.addEventListener('click', closeGenerateModal);
   generateOverlay.addEventListener('click', closeGenerateModal);
   generateSubmitBtn.addEventListener('click', submitGenerate);
+  slideTabSlide.addEventListener('click', () => showSlideTab('slide'));
+  slideTabCode.addEventListener('click', () => showSlideTab('code'));
   templateBtn.addEventListener('click', openTemplateModal);
   templateCloseBtn.addEventListener('click', closeTemplateModal);
   templateOverlay.addEventListener('click', closeTemplateModal);
@@ -148,8 +156,6 @@ function selectNote(id) {
 
   noteTitle.textContent = note.title;
   noteDate.textContent = note.created_at.slice(0, 10);
-  // marked.parse: Markdown テキストを HTML に変換して表示
-  noteContent.innerHTML = marked.parse(note.content);
   noteEditor.value = note.content;
 
   emptyState.classList.add('hidden');
@@ -162,7 +168,6 @@ function selectNote(id) {
 
 // ===== 表示／編集モード切替 =====
 function showViewMode() {
-  noteContent.classList.remove('hidden');
   noteEditor.classList.add('hidden');
   noteEditor.classList.remove('flex');
   noteCategory.textContent = categoryLabel(selectedNote?.category ?? 'memo');
@@ -172,10 +177,92 @@ function showViewMode() {
   isEditMode = false;
   generateBtn.classList.add('hidden');
   renderTags(false);
+
+  if (selectedNote?.format_type === 'slide') {
+    slideTabs.classList.remove('hidden');
+    slideContainer.classList.remove('hidden');
+    slideFrame.srcdoc = buildSlideHtml(selectedNote?.content ?? '');
+    showSlideTab(slideViewTab);
+  } else {
+    slideTabs.classList.add('hidden');
+    slideContainer.classList.add('hidden');
+    slideContainer.style.flex = '';
+    slideContainer.style.overflow = '';
+    noteContent.classList.remove('hidden');
+    noteContent.innerHTML = marked.parse(selectedNote?.content ?? '');
+  }
+}
+
+function showSlideTab(tab) {
+  slideViewTab = tab;
+  slideTabSlide.classList.toggle('tag--active', tab === 'slide');
+  slideTabCode.classList.toggle('tag--active', tab === 'code');
+
+  if (tab === 'slide') {
+    noteContent.classList.add('hidden');
+    slideContainer.style.flex = '';
+    slideContainer.style.overflow = '';
+  } else {
+    // display:none を避け flex で潰す（iframe の React 初期化を維持するため）
+    slideContainer.style.flex = '0 0 0px';
+    slideContainer.style.overflow = 'hidden';
+    noteContent.classList.remove('hidden');
+    noteContent.innerHTML = `<pre style="white-space:pre-wrap;word-break:break-all;font-size:0.8rem;opacity:0.85;">${escapeHtml(selectedNote?.content ?? '')}</pre>`;
+  }
+}
+
+function buildSlideHtml(jsxCode) {
+  const escapedCode = JSON.stringify(jsxCode);
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f172a; color: white; font-family: system-ui, sans-serif; height: 100vh; overflow: hidden; }
+#root { height: 100vh; }
+#error { display: none; padding: 24px; color: #f87171; font-family: monospace; font-size: 13px; white-space: pre-wrap; overflow: auto; height: 100vh; }
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<div id="error"></div>
+<script>
+(function() {
+  var root = document.getElementById('root');
+  var errEl = document.getElementById('error');
+  function showError(msg) {
+    root.style.display = 'none';
+    errEl.style.display = 'block';
+    errEl.textContent = msg;
+  }
+  root.textContent = '[1] 起動中...';
+  try {
+    var jsxCode = ${escapedCode};
+    root.textContent = '[2] コンパイル中...';
+    var transformed = Babel.transform(jsxCode, { presets: ['react'] }).code;
+    root.textContent = '[3] コンポーネント生成中...';
+    var factory = new Function('React', 'ReactDOM', transformed + '\\nreturn typeof Slide !== "undefined" ? Slide : null;');
+    var SlideComponent = factory(React, ReactDOM);
+    if (!SlideComponent) { showError('エラー: Slide が定義されていません'); return; }
+    root.textContent = '[4] レンダリング中...';
+    ReactDOM.createRoot(root).render(React.createElement(SlideComponent));
+  } catch(e) {
+    showError('エラー [' + (root.textContent || '?') + ']:\\n' + e.message);
+  }
+})();
+</script>
+</body>
+</html>`;
 }
 
 function showEditMode() {
   noteContent.classList.add('hidden');
+  slideContainer.style.flex = '0 0 0px';
+  slideContainer.style.overflow = 'hidden';
   noteEditor.classList.remove('hidden');
   noteEditor.classList.add('flex');
   // 表示モードのテキスト span を隠し、セレクトボックスを表示する
@@ -530,13 +617,22 @@ async function submitGenerate() {
     generateSubmitBtn.textContent = attempt === 1 ? '生成中...' : `リトライ中... (${attempt}/${MAX_RETRIES})`;
 
     try {
-      const { content } = await api('/api/generate', {
+      const { content, format_type } = await api('/api/generate', {
         method: 'POST',
         body: JSON.stringify({ template_id: templateId, prompt, model: modelSelect.value }),
       });
 
+      const title = extractTitle(content);
+      const updated = await api(`/api/notes/${selectedNote.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ content, title, format_type }),
+      });
+      selectedNote = { ...updated, tags: selectedNote.tags };
+      noteTitle.textContent = updated.title;
       noteEditor.value = content;
-      scheduleAutoSave();
+      const idx = notes.findIndex(n => n.id === updated.id);
+      if (idx !== -1) notes[idx] = updated;
+      renderNoteList();
       generateSubmitBtn.textContent = '生成する';
       generateSubmitBtn.disabled = false;
       closeGenerateModal();

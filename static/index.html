@@ -93,8 +93,19 @@
       <!-- タグ一覧 -->
       <div id="noteTags" class="px-6 py-2.5 flex gap-1.5 flex-wrap items-center border-b border-white/10"></div>
 
-      <!-- 表示モード -->
+      <!-- スライドタブ（slide ノートの view モードのみ表示） -->
+      <div id="slideTabs" class="hidden px-6 pt-3 pb-1 flex gap-2">
+        <button id="slideTabSlide" class="tag tag--active" data-tab="slide">▶ スライド</button>
+        <button id="slideTabCode" class="tag" data-tab="code">{ } コード</button>
+      </div>
+
+      <!-- 表示モード（article: Markdown / slide コードタブ: <pre>） -->
       <div id="noteContent" class="flex-1 overflow-y-auto px-6 py-4 markdown-body"></div>
+
+      <!-- スライド iframe（slide ノートのスライドタブで表示） -->
+      <div id="slideContainer" class="hidden flex-1 relative min-h-0">
+        <iframe id="slideFrame" class="absolute inset-0 w-full h-full border-0" sandbox="allow-scripts"></iframe>
+      </div>
 
       <!-- 編集モード -->
       <textarea
