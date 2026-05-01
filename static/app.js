@@ -181,8 +181,14 @@ function showViewMode() {
   if (selectedNote?.format_type === 'slide') {
     slideTabs.classList.remove('hidden');
     slideContainer.classList.remove('hidden');
-    slideFrame.srcdoc = buildSlideHtml(selectedNote?.content ?? '');
     showSlideTab(slideViewTab);
+    requestAnimationFrame(() => {
+      const html = buildSlideHtml(selectedNote?.content ?? '');
+      slideFrame.srcdoc = '';
+      requestAnimationFrame(() => {
+        slideFrame.srcdoc = html;
+      });
+    });
   } else {
     slideTabs.classList.add('hidden');
     slideContainer.classList.add('hidden');
