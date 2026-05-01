@@ -12,6 +12,7 @@ let searchTimer = null;   // debounce 用タイマーID（検索）
 let templates = [];       // テンプレート一覧キャッシュ
 let editingTemplate = null; // 現在編集中のテンプレート（null = 新規）
 let slideViewTab = 'slide'; // slide ノートの view モードで表示中のタブ（'slide' | 'code'）
+let generateCancelled = false; // AI生成リトライをキャンセルするフラグ
 
 // ===== DOM 参照 =====
 const noteList     = document.getElementById('noteList');
@@ -343,10 +344,10 @@ function applyFilters() {
 }
 
 // 検索結果またはローカルキャッシュにカテゴリフィルタを適用して描画
-function applyCategory(noteList) {
+function applyCategory(noteArr) {
   filteredNotes = currentCategory === 'all'
-    ? noteList
-    : noteList.filter(n => n.category === currentCategory);
+    ? noteArr
+    : noteArr.filter(n => n.category === currentCategory);
   renderNoteList();
 }
 
@@ -552,16 +553,16 @@ async function saveTemplate() {
   };
 
   try {
+    let savedId;
     if (editingTemplate) {
       await api(`/api/templates/${editingTemplate.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      savedId = editingTemplate.id;
     } else {
-      await api('/api/templates', { method: 'POST', body: JSON.stringify(body) });
+      const created = await api('/api/templates', { method: 'POST', body: JSON.stringify(body) });
+      savedId = created.id;
     }
     templates = await api('/api/templates');
-    const saved = editingTemplate
-      ? templates.find(t => t.id === editingTemplate.id)
-      : templates[0];
-    editingTemplate = saved ?? null;
+    editingTemplate = templates.find(t => t.id === savedId) ?? null;
     renderTemplateList();
     tmplError.classList.add('hidden');
   } catch (e) {
@@ -587,17 +588,21 @@ function showTmplError(msg) {
 // ===== AI 生成 =====
 async function openGenerateModal() {
   // テンプレート一覧を取得してセレクトボックスを更新する
-  const templates = await api('/api/templates');
+  const tmplList = await api('/api/templates');
   templateSelect.innerHTML = '<option value="">テンプレートを選択...</option>' +
-    templates.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+    tmplList.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
   generatePrompt.value = '';
   generateError.classList.add('hidden');
+  generateCancelled = false;
   generateModal.classList.remove('hidden');
   generatePrompt.focus();
 }
 
 function closeGenerateModal() {
+  generateCancelled = true;
   generateModal.classList.add('hidden');
+  generateSubmitBtn.textContent = '生成する';
+  generateSubmitBtn.disabled = false;
 }
 
 async function submitGenerate() {
@@ -615,11 +620,13 @@ async function submitGenerate() {
 
   generateSubmitBtn.disabled = true;
   generateError.classList.add('hidden');
+  generateCancelled = false;
 
   const MAX_RETRIES = 20;
   let lastError = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    if (generateCancelled) return;
     generateSubmitBtn.textContent = attempt === 1 ? '生成中...' : `リトライ中... (${attempt}/${MAX_RETRIES})`;
 
     try {
@@ -627,6 +634,8 @@ async function submitGenerate() {
         method: 'POST',
         body: JSON.stringify({ template_id: templateId, prompt, model: modelSelect.value }),
       });
+
+      if (generateCancelled) return;
 
       const title = extractTitle(content);
       const updated = await api(`/api/notes/${selectedNote.id}`, {
@@ -649,6 +658,7 @@ async function submitGenerate() {
     }
   }
 
+  if (generateCancelled) return;
   showGenerateError(`生成に失敗しました（${MAX_RETRIES}回試行）: ${lastError.message}`);
   generateSubmitBtn.textContent = '生成する';
   generateSubmitBtn.disabled = false;
