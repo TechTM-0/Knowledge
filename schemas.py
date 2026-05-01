@@ -36,3 +36,4 @@ class TemplateUpdate(BaseModel):
 class GenerateRequest(BaseModel):
     template_id: int
     prompt: str  # ユーザーが入力するトピック・指示
+    model: str = 'gemini-2.5-flash-lite'

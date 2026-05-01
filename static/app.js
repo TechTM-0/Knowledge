@@ -36,6 +36,7 @@ const generateSubmitBtn    = document.getElementById('generateSubmitBtn');
 const generatePrompt       = document.getElementById('generatePrompt');
 const generateError        = document.getElementById('generateError');
 const templateSelect       = document.getElementById('templateSelect');
+const modelSelect          = document.getElementById('modelSelect');
 const templateBtn          = document.getElementById('templateBtn');
 const templateModal        = document.getElementById('templateModal');
 const templateOverlay      = document.getElementById('templateOverlay');
@@ -519,27 +520,36 @@ async function submitGenerate() {
     return;
   }
 
-  generateSubmitBtn.textContent = '生成中...';
   generateSubmitBtn.disabled = true;
   generateError.classList.add('hidden');
 
-  try {
-    // Gemini API でコンテンツを生成
-    const { content } = await api('/api/generate', {
-      method: 'POST',
-      body: JSON.stringify({ template_id: templateId, prompt }),
-    });
+  const MAX_RETRIES = 20;
+  let lastError = null;
 
-    // 生成されたコンテンツを現在の編集中ノートに流し込む
-    noteEditor.value = content;
-    scheduleAutoSave();
-    closeGenerateModal();
-  } catch (e) {
-    showGenerateError(`生成に失敗しました: ${e.message}`);
-  } finally {
-    generateSubmitBtn.textContent = '生成する';
-    generateSubmitBtn.disabled = false;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    generateSubmitBtn.textContent = attempt === 1 ? '生成中...' : `リトライ中... (${attempt}/${MAX_RETRIES})`;
+
+    try {
+      const { content } = await api('/api/generate', {
+        method: 'POST',
+        body: JSON.stringify({ template_id: templateId, prompt, model: modelSelect.value }),
+      });
+
+      noteEditor.value = content;
+      scheduleAutoSave();
+      generateSubmitBtn.textContent = '生成する';
+      generateSubmitBtn.disabled = false;
+      closeGenerateModal();
+      return;
+    } catch (e) {
+      lastError = e;
+      if (attempt < MAX_RETRIES) await new Promise(r => setTimeout(r, 2000));
+    }
   }
+
+  showGenerateError(`生成に失敗しました（${MAX_RETRIES}回試行）: ${lastError.message}`);
+  generateSubmitBtn.textContent = '生成する';
+  generateSubmitBtn.disabled = false;
 }
 
 function showGenerateError(msg) {
