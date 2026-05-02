@@ -8,48 +8,76 @@ const slideFrame     = document.getElementById('slideFrame');
 const slideContainer = document.getElementById('slideContainer');
 const noteContent    = document.getElementById('noteContent');
 
-export function buildSlideHtml(jsxCode) {
-  const escapedCode = JSON.stringify(jsxCode);
+export function buildSlideHtml(htmlContent) {
+  const escapedContent = JSON.stringify(htmlContent);
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0f172a; color: white; font-family: system-ui, sans-serif; height: 100vh; overflow: hidden; }
-#root { height: 100vh; }
-#error { display: none; padding: 24px; color: #f87171; font-family: monospace; font-size: 13px; white-space: pre-wrap; overflow: auto; height: 100vh; }
+body { background: #1a1a1a; color: #e0e0e0; font-family: system-ui, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+#slides { flex: 1; min-height: 0; overflow-y: auto; padding: 32px; }
+.slide { display: none; }
+.slide.active { display: block; }
+#nav { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 32px; background: #111; border-top: 1px solid #333; }
+#nav button { padding: 8px 20px; background: #e87d0d; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+#nav button:disabled { opacity: 0.4; cursor: default; }
+#counter { color: #888; font-size: 0.9em; }
 </style>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-<div id="root"></div>
-<div id="error"></div>
+<div id="slides"></div>
+<div id="nav">
+  <button id="prevBtn">← 前へ</button>
+  <span id="counter"></span>
+  <button id="nextBtn">次へ →</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script>
 (function() {
-  var root = document.getElementById('root');
-  var errEl = document.getElementById('error');
-  function showError(msg) {
-    root.style.display = 'none';
-    errEl.style.display = 'block';
-    errEl.textContent = msg;
+  var container = document.getElementById('slides');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var counter = document.getElementById('counter');
+  var idx = 0;
+
+  var tmp = document.createElement('div');
+  tmp.innerHTML = ${escapedContent};
+  var slideEls = Array.from(tmp.querySelectorAll('[data-slide]'));
+  if (slideEls.length === 0) {
+    container.innerHTML = '<div style="color:#f87171;padding:24px;font-family:monospace;white-space:pre-wrap">[data-slide] 要素が見つかりません。\\nテンプレートを確認してください。</div>';
+    return;
   }
-  root.textContent = '[1] 起動中...';
-  try {
-    var jsxCode = ${escapedCode};
-    root.textContent = '[2] コンパイル中...';
-    var transformed = Babel.transform(jsxCode, { presets: ['react'] }).code;
-    root.textContent = '[3] コンポーネント生成中...';
-    var factory = new Function('React', 'ReactDOM', transformed + '\\nreturn typeof Slide !== "undefined" ? Slide : null;');
-    var SlideComponent = factory(React, ReactDOM);
-    if (!SlideComponent) { showError('エラー: Slide が定義されていません'); return; }
-    root.textContent = '[4] レンダリング中...';
-    ReactDOM.createRoot(root).render(React.createElement(SlideComponent));
-  } catch(e) {
-    showError('エラー [' + (root.textContent || '?') + ']:\\n' + e.message);
+
+  slideEls.forEach(function(s) {
+    s.classList.add('slide');
+    container.appendChild(s);
+  });
+
+  var slides = container.querySelectorAll('.slide');
+
+  function update() {
+    slides.forEach(function(s, i) { s.classList.toggle('active', i === idx); });
+    counter.textContent = (idx + 1) + ' / ' + slides.length;
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === slides.length - 1;
   }
+
+  prevBtn.addEventListener('click', function() { if (idx > 0) { idx--; update(); } });
+  nextBtn.addEventListener('click', function() { if (idx < slides.length - 1) { idx++; update(); } });
+
+  renderMathInElement(document.body, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false }
+    ],
+    throwOnError: false
+  });
+
+  update();
 })();
 </script>
 </body>

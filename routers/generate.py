@@ -41,15 +41,11 @@ def generate_note(req: GenerateRequest):
 
     content = response.text.strip()
     if format_type == "slide":
-        # jsx/js タグ付きコードフェンスを優先、なければタグなしを抽出
-        match = re.search(r'```(?:jsx|javascript|js)\n(.*?)```', content, re.DOTALL)
+        # html タグ付きコードフェンスを優先、なければタグなしを抽出
+        match = re.search(r'```(?:html)\n(.*?)```', content, re.DOTALL)
         if not match:
             match = re.search(r'```\n(.*?)```', content, re.DOTALL)
         if match:
             content = match.group(1).strip()
-        # ブラウザ環境で無効な import / export 文を除去する
-        content = re.sub(r'^import\s+.*$', '', content, flags=re.MULTILINE)
-        content = re.sub(r'^export\s+default\s+\w+;?\s*$', '', content, flags=re.MULTILINE)
-        content = content.strip()
 
     return {"content": content, "format_type": format_type}
