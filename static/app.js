@@ -14,6 +14,7 @@ const searchInput        = document.getElementById('searchInput');
 const emptyState         = document.getElementById('emptyState');
 const noteView           = document.getElementById('noteView');
 const noteTitle          = document.getElementById('noteTitle');
+const noteTitleInput     = document.getElementById('noteTitleInput');
 const noteDate           = document.getElementById('noteDate');
 const noteCategory       = document.getElementById('noteCategory');
 const noteTags           = document.getElementById('noteTags');
@@ -43,6 +44,7 @@ function bindEvents() {
   document.getElementById('deleteBtn').addEventListener('click', deleteNote);
   searchInput.addEventListener('input', scheduleSearch);
   noteEditor.addEventListener('input', scheduleAutoSave);
+  noteTitleInput.addEventListener('input', scheduleAutoSave);
   noteCategorySelect.addEventListener('change', changeCategory);
 
   // イベント委譲: ノートカード
@@ -142,6 +144,8 @@ function selectNote(id) {
 function showViewMode() {
   noteEditor.classList.add('hidden');
   noteEditor.classList.remove('flex');
+  noteTitle.classList.remove('hidden');
+  noteTitleInput.classList.add('hidden');
   noteCategory.textContent = categoryLabel(state.selectedNote?.category ?? 'memo');
   noteCategory.classList.remove('hidden');
   noteCategorySelect.classList.add('hidden');
@@ -164,6 +168,9 @@ function showEditMode() {
   collapseSlide();
   noteEditor.classList.remove('hidden');
   noteEditor.classList.add('flex');
+  noteTitle.classList.add('hidden');
+  noteTitleInput.classList.remove('hidden');
+  noteTitleInput.value = state.selectedNote?.title ?? '';
   noteCategory.classList.add('hidden');
   noteCategorySelect.classList.remove('hidden');
   noteCategorySelect.value = state.selectedNote?.category ?? 'memo';
@@ -184,7 +191,7 @@ function scheduleAutoSave() {
   state.autoSaveTimer = setTimeout(async () => {
     if (!state.selectedNote) return;
     const content = noteEditor.value;
-    const title = extractTitle(content);
+    const title = noteTitleInput.value.trim() || extractTitle(content);
     const currentTags = state.selectedNote.tags;
     const updated = await api(`/api/notes/${state.selectedNote.id}`, {
       method: 'PUT',

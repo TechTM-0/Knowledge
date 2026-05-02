@@ -8,6 +8,7 @@ const generatePrompt    = document.getElementById('generatePrompt');
 const templateSelect    = document.getElementById('templateSelect');
 const modelSelect       = document.getElementById('modelSelect');
 const noteTitle         = document.getElementById('noteTitle');
+const noteTitleInput    = document.getElementById('noteTitleInput');
 const noteEditor        = document.getElementById('noteEditor');
 
 export async function openGenerateModal() {
@@ -62,6 +63,7 @@ export async function submitGenerate(onSuccess) {
 
       state.selectedNote = { ...updated, tags: state.selectedNote.tags };
       noteTitle.textContent = updated.title;
+      noteTitleInput.value = updated.title;
       noteEditor.value = content;
       const idx = state.notes.findIndex(n => n.id === updated.id);
       if (idx !== -1) state.notes[idx] = updated;
