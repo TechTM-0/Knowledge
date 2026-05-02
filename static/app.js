@@ -163,6 +163,7 @@ function showViewMode() {
     hideSlide();
     noteContent.classList.remove('hidden');
     noteContent.innerHTML = marked.parse(state.selectedNote?.content ?? '');
+    renderMathInElement(noteContent, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
   }
 }
 
@@ -203,6 +204,7 @@ function scheduleAutoSave() {
     state.selectedNote = { ...updated, tags: currentTags };
     noteTitle.textContent = updated.title;
     noteContent.innerHTML = marked.parse(content);
+    renderMathInElement(noteContent, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
     const idx = state.notes.findIndex(n => n.id === updated.id);
     if (idx !== -1) state.notes[idx] = updated;
     renderNoteList();
