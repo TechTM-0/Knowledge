@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { api, escapeHtml, categoryLabel, extractTitle } from './utils.js';
+import { api, escapeHtml, categoryLabel, extractTitle, CATEGORY_LABELS } from './utils.js';
 import { showSlideTab, renderSlide, hideSlide, collapseSlide } from './slide.js';
 import {
   openTemplateModal, closeTemplateModal, renderTemplateList,
@@ -28,6 +28,9 @@ const templateList       = document.getElementById('templateList');
 
 // ===== 初期化 =====
 async function init() {
+  noteCategorySelect.innerHTML = Object.entries(CATEGORY_LABELS)
+    .map(([v, l]) => `<option value="${v}">${l}</option>`)
+    .join('');
   await loadNotes();
   bindEvents();
 }

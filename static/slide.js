@@ -76,6 +76,7 @@ export function showSlideTab(tab) {
 
 export function renderSlide() {
   slideTabs.classList.remove('hidden');
+  slideTabs.classList.add('flex');
   slideContainer.classList.remove('hidden');
   showSlideTab(state.slideViewTab);
   requestAnimationFrame(() => {
@@ -89,6 +90,7 @@ export function renderSlide() {
 
 export function hideSlide() {
   slideTabs.classList.add('hidden');
+  slideTabs.classList.remove('flex');
   slideContainer.classList.add('hidden');
   slideContainer.style.flex = '';
   slideContainer.style.overflow = '';
