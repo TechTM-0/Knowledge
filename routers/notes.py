@@ -1,7 +1,8 @@
 import json
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from database import get_db, now, row_to_note
 from schemas import NoteCreate, NoteUpdate
+from routers.vector_search import embed_and_save, remove_embedding
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
@@ -42,7 +43,7 @@ def get_note(note_id: int):
 
 
 @router.post("", status_code=201)
-def create_note(note: NoteCreate):
+def create_note(note: NoteCreate, bg: BackgroundTasks):
     ts = now()
     conn = get_db()
     cur = conn.execute(
@@ -53,11 +54,12 @@ def create_note(note: NoteCreate):
     # lastrowid: INSERT で採番された自動インクリメント ID
     row = conn.execute("SELECT * FROM notes WHERE id = ?", (cur.lastrowid,)).fetchone()
     conn.close()
+    bg.add_task(embed_and_save, cur.lastrowid, note.title, note.content, note.format_type)
     return row_to_note(row)
 
 
 @router.put("/{note_id}")
-def update_note(note_id: int, note: NoteUpdate):
+def update_note(note_id: int, note: NoteUpdate, bg: BackgroundTasks):
     conn = get_db()
     if not conn.execute("SELECT 1 FROM notes WHERE id = ?", (note_id,)).fetchone():
         conn.close()
@@ -85,11 +87,14 @@ def update_note(note_id: int, note: NoteUpdate):
 
     row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
     conn.close()
+    if fields and ("title" in fields or "content" in fields or "format_type" in fields):
+        updated = row_to_note(row)
+        bg.add_task(embed_and_save, note_id, updated["title"], updated["content"], updated["format_type"])
     return row_to_note(row)
 
 
 @router.delete("/{note_id}", status_code=204)
-def delete_note(note_id: int):
+def delete_note(note_id: int, bg: BackgroundTasks):
     conn = get_db()
     if not conn.execute("SELECT 1 FROM notes WHERE id = ?", (note_id,)).fetchone():
         conn.close()
@@ -97,3 +102,4 @@ def delete_note(note_id: int):
     conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
     conn.commit()
     conn.close()
+    bg.add_task(remove_embedding, note_id)

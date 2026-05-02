@@ -10,4 +10,5 @@ export const state = {
   editingTemplate: null,
   slideViewTab: 'slide',
   generateCancelled: false,
+  vectorSearchMode: false,
 };

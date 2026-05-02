@@ -23,8 +23,9 @@ const noteEditor         = document.getElementById('noteEditor');
 const editBtn            = document.getElementById('editBtn');
 const newNoteBtn         = document.getElementById('newNoteBtn');
 const noteCategorySelect = document.getElementById('noteCategorySelect');
-const generateBtn        = document.getElementById('generateBtn');
-const templateList       = document.getElementById('templateList');
+const generateBtn           = document.getElementById('generateBtn');
+const templateList          = document.getElementById('templateList');
+const vectorSearchToggle    = document.getElementById('vectorSearchToggle');
 
 // ===== 初期化 =====
 async function init() {
@@ -84,6 +85,7 @@ function bindEvents() {
     if (t) openTemplateForm(t);
   });
 
+  vectorSearchToggle.addEventListener('change', toggleVectorSearch);
   document.getElementById('generateBtn').addEventListener('click', openGenerateModal);
   document.getElementById('generateCloseBtn').addEventListener('click', closeGenerateModal);
   document.getElementById('generateOverlay').addEventListener('click', closeGenerateModal);
@@ -223,8 +225,17 @@ function scheduleSearch() {
 }
 
 async function searchFromApi(query) {
-  const results = await api(`/api/notes?q=${encodeURIComponent(query)}`);
+  const endpoint = state.vectorSearchMode
+    ? `/api/vector-search?q=${encodeURIComponent(query)}`
+    : `/api/notes?q=${encodeURIComponent(query)}`;
+  const results = await api(endpoint);
   applyCategory(results);
+}
+
+function toggleVectorSearch() {
+  state.vectorSearchMode = vectorSearchToggle.checked;
+  const query = searchInput.value.trim();
+  if (query) searchFromApi(query);
 }
 
 function applyFilters() {

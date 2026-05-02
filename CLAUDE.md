@@ -19,11 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 全文検索（SQLite FTS5）
 - テンプレート管理（作成・編集・削除・params キーバリュー設定）
 - AI文章生成（Google Gemini API）— 編集モードで ✨ AI ボタンから起動、現在のノートに流し込む
-- スライドレンダラー — `format_type=slide` のノートを iframe + `@babel/standalone` + React CDN でレンダリング。スライド／コードのタブ切り替えあり
-
-### 未実装
-
-- **ベクトル検索**: 意味的な類似検索（候補: text-embedding-004 または sentence-transformers）
+- スライドレンダラー — `format_type=slide` のノートを iframe + KaTeX でレンダリング。スライド／コードのタブ切り替えあり
+- ベクトル検索（意味検索）— `gemini-embedding-2` で埋め込み生成。検索ボックス横の 🔮 ボタンで切り替え。初回は `POST /api/vector-search/index` で全ノートを再インデックス
 
 ### 技術スタック
 
@@ -291,3 +288,4 @@ ES Modules（`type="module"`）を使用。グローバル変数汚染なし。
 - AI文章生成には Anthropic API を**使わない**。Google Gemini API（無料枠）を使う
 - フォルダ構成に変更があった場合は、`README.md` の「フォルダ構成」セクションも必ず更新する
 - 新しい機能ドメインを追加するときは「設計方針」セクションのファイル構成も更新する
+- ベクトル検索に関する作業を始める前に必ず `docs/vector_search_issues.md` を読む。スコア分布の特性・現在の閾値の根拠・改善提案の優先度が記載されている

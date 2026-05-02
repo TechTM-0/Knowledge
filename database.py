@@ -83,6 +83,12 @@ def init_db():
         conn.execute("ALTER TABLE notes ADD COLUMN format_type TEXT NOT NULL DEFAULT 'article'")
         conn.commit()
 
+    # 既存DBに notes.embedding カラムがなければ追加
+    note_columns = [row[1] for row in conn.execute("PRAGMA table_info(notes)").fetchall()]
+    if "embedding" not in note_columns:
+        conn.execute("ALTER TABLE notes ADD COLUMN embedding TEXT")
+        conn.commit()
+
     conn.close()
 
 
