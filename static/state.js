@@ -13,4 +13,5 @@ export const state = {
   vectorSearchMode: false,
   vectorSearchThreshold: 0,
   vectorSearchResults: [],
+  vectorSearchSignalIndex: 2,
 };

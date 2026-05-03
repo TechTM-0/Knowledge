@@ -86,6 +86,11 @@ function bindEvents() {
   });
 
   vectorSearchToggle.addEventListener('change', toggleVectorSearch);
+  document.getElementById('vectorSignalSlider').addEventListener('input', e => {
+    state.vectorSearchSignalIndex = Number(e.target.value);
+    document.getElementById('vectorSignalLabel').textContent = SIGNAL_LABELS[state.vectorSearchSignalIndex];
+    applyVectorThreshold();
+  });
   document.getElementById('vectorThresholdSlider').addEventListener('input', e => {
     state.vectorSearchThreshold = parseFloat(e.target.value);
     document.getElementById('vectorThresholdValue').textContent = state.vectorSearchThreshold.toFixed(1);
@@ -242,6 +247,9 @@ async function searchFromApi(query) {
   }
 }
 
+const SIGNAL_STEPS  = [1.0, 1.1, 1.3, 1.5, 2.0];
+const SIGNAL_LABELS = ['すべて表示', 'ひろい（連想）', '標準（おすすめ）', 'きびしい（確実）', '厳選（ピンポイント）'];
+
 function applyVectorThreshold() {
   const results = state.vectorSearchResults;
   if (!results.length) {
@@ -249,11 +257,35 @@ function applyVectorThreshold() {
     applyCategory([]);
     return;
   }
-  const scores = results.map(n => n._rrf_score ?? 0);
-  const minS = Math.min(...scores);
-  const maxS = Math.max(...scores);
-  const threshold = minS + (maxS - minS) * state.vectorSearchThreshold;
-  const filtered = results.filter(n => (n._rrf_score ?? 0) >= threshold);
+
+  const scores  = results.map(n => n._rrf_score ?? 0);
+  const maxS    = Math.max(...scores);
+  const avgS    = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const sigRatio = SIGNAL_STEPS[state.vectorSearchSignalIndex];
+
+  let qualified;
+  if (sigRatio <= 1.0) {
+    qualified = [...results];
+  } else {
+    if (maxS / avgS < sigRatio) {
+      document.getElementById('vectorThresholdCount').textContent = '0';
+      applyCategory([]);
+      return;
+    }
+    qualified = results.filter(n => (n._rrf_score ?? 0) >= avgS);
+  }
+
+  if (!qualified.length) {
+    document.getElementById('vectorThresholdCount').textContent = '0';
+    applyCategory([]);
+    return;
+  }
+
+  const qScores = qualified.map(n => n._rrf_score ?? 0);
+  const minQ = Math.min(...qScores);
+  const maxQ = Math.max(...qScores);
+  const threshold = minQ + (maxQ - minQ) * state.vectorSearchThreshold;
+  const filtered = qualified.filter(n => (n._rrf_score ?? 0) >= threshold);
   document.getElementById('vectorThresholdCount').textContent = filtered.length;
   applyCategory(filtered);
 }
@@ -265,9 +297,12 @@ function toggleVectorSearch() {
   if (!state.vectorSearchMode) {
     state.vectorSearchResults = [];
     state.vectorSearchThreshold = 0;
+    state.vectorSearchSignalIndex = 2;
     document.getElementById('vectorThresholdSlider').value = 0;
     document.getElementById('vectorThresholdValue').textContent = '0.0';
     document.getElementById('vectorThresholdCount').textContent = '-';
+    document.getElementById('vectorSignalSlider').value = 2;
+    document.getElementById('vectorSignalLabel').textContent = SIGNAL_LABELS[2];
   }
   const query = searchInput.value.trim();
   if (query) searchFromApi(query);

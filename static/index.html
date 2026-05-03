@@ -48,16 +48,31 @@
         </div>
         <span class="toggle-label text-xs text-white/40">🔮 意味検索</span>
       </label>
-      <div id="vectorThresholdRow" class="hidden flex flex-col gap-1 px-1">
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-white/40">関連性</span>
-          <span id="vectorThresholdValue" class="text-xs text-indigo-300 font-mono">0.0</span>
+      <div id="vectorThresholdRow" class="hidden flex flex-col gap-2 px-1">
+        <!-- 信頼性スライダー -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-white/40">信頼性</span>
+            <span id="vectorSignalLabel" class="text-xs text-indigo-300">標準（おすすめ）</span>
+          </div>
+          <input id="vectorSignalSlider" type="range" min="0" max="4" step="1" value="2" class="threshold-slider">
+          <div class="flex items-center justify-between text-xs text-white/25">
+            <span>すべて表示</span>
+            <span>厳選</span>
+          </div>
         </div>
-        <input id="vectorThresholdSlider" type="range" min="0" max="1" step="0.01" value="0" class="threshold-slider">
-        <div class="flex items-center justify-between text-xs text-white/25">
-          <span>すべて</span>
-          <span id="vectorThresholdCount">-</span>
-          <span>関連高 ▶</span>
+        <!-- 関連性スライダー -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-white/40">関連性</span>
+            <span id="vectorThresholdValue" class="text-xs text-indigo-300 font-mono">0.0</span>
+          </div>
+          <input id="vectorThresholdSlider" type="range" min="0" max="1" step="0.01" value="0" class="threshold-slider">
+          <div class="flex items-center justify-between text-xs text-white/25">
+            <span>すべて</span>
+            <span id="vectorThresholdCount">-</span>
+            <span>関連高 ▶</span>
+          </div>
         </div>
       </div>
     </div>
