@@ -5,30 +5,19 @@
 ## アーキテクチャ
 
 ```
-ブラウザ（localhost）
-      │
- [FastAPI]
-├── ノートのCRUD
-├── テンプレートのCRUD
-├── 全文検索（SQLite FTS5）
-└── 文章生成（Google Gemini API）
-      │
- [SQLite]  ← 全データがローカルに保存
+ブラウザ（localhost）→ FastAPI → SQLite
 ```
 
-## 実装済み機能
+## 機能
 
 - ノートの作成・編集・削除
 - タグ・カテゴリによる整理
 - 全文検索（SQLite FTS5）
+- ベクトル検索（意味検索、Gemini Embedding API）
 - テンプレート管理（作成・編集・削除）
 - AI文章生成（Google Gemini API）
-- Markdown対応
-- スライドレンダラー（`format_type=slide` 時に iframe + Babel + React CDN でレンダリング）
-
-## 未実装
-
-- ベクトル検索（意味的な類似検索）
+- Markdown + 数式（KaTeX）対応
+- スライドレンダラー（`format_type=slide` 時に iframe + KaTeX でレンダリング）
 
 ## 技術スタック
 
@@ -54,7 +43,7 @@ GEMINI_API_KEY=your_api_key_here
 ### サーバー起動（Windows PowerShell）
 
 ```powershell
-python -m uvicorn main:app --reload
+.venv\Scripts\uvicorn.exe main:app --host 127.0.0.1 --port 8000
 ```
 
 ## フォルダ構成
@@ -66,9 +55,10 @@ Knowledge/
 ├── schemas.py         # Pydantic スキーマ（リクエスト/レスポンス型）
 ├── routers/
 │   ├── __init__.py
-│   ├── notes.py       # ノート CRUD エンドポイント
-│   ├── templates.py   # テンプレート CRUD エンドポイント
-│   └── generate.py    # Gemini API 連携・コンテンツ生成
+│   ├── notes.py          # ノート CRUD エンドポイント
+│   ├── templates.py      # テンプレート CRUD エンドポイント
+│   ├── generate.py       # Gemini API 連携・コンテンツ生成
+│   └── vector_search.py  # ベクトル検索（Gemini Embedding + RRF）
 ├── requirements.txt   # 依存パッケージ
 ├── knowledge.db       # SQLiteデータベース（Git管理外）
 ├── static/

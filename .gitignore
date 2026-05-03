@@ -21,6 +21,9 @@ build/
 *.db
 *.sqlite3
 
+# ログ
+*.log
+
 # OS
 .DS_Store
 Thumbs.db

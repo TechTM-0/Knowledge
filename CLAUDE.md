@@ -2,7 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## サーバー起動手順（必読）
+## 会話開始時にやること（必読）
+
+1. **未着手タスクを把握する** — `C:\Users\t-mur\.claude\projects\C--Users-t-mur-Knowledge\memory\project_pending_tasks.md` を参照する
+2. **ベクトル検索の作業前** — `docs/vector_search_issues.md` を必ず読む
+
+### サーバー起動が必要な場合
 
 ```powershell
 # 仮想環境の uvicorn で起動する。python main.py では起動しない
@@ -301,4 +306,3 @@ ES Modules（`type="module"`）を使用。グローバル変数汚染なし。
 - AI文章生成には Anthropic API を**使わない**。Google Gemini API（無料枠）を使う
 - フォルダ構成に変更があった場合は、`README.md` の「フォルダ構成」セクションも必ず更新する
 - 新しい機能ドメインを追加するときは「設計方針」セクションのファイル構成も更新する
-- ベクトル検索に関する作業を始める前に必ず `docs/vector_search_issues.md` を読む。スコア分布の特性・現在の閾値の根拠・改善提案の優先度が記載されている
