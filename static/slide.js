@@ -21,18 +21,18 @@ body { background: linear-gradient(135deg, #0a0a0f 0%, #111827 50%, #0f172a 100%
 #slides { flex: 1; min-height: 0; overflow-y: auto; padding: 32px; }
 .slide { display: none; }
 .slide.active { display: block; }
-#nav { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 32px; background: rgba(255,255,255,0.04); border-top: 1px solid rgba(255,255,255,0.08); }
-#nav button { padding: 8px 20px; background: rgba(99,102,241,0.35); color: #e0e7ff; border: 1px solid rgba(165,180,252,0.30); border-radius: 9px; cursor: pointer; font-size: 0.9em; }
+#nav { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 5px 32px; background: rgba(255,255,255,0.04); border-top: 1px solid rgba(255,255,255,0.08); }
+#nav button { padding: 2px 10px; background: rgba(99,102,241,0.35); color: #e0e7ff; border: 1px solid rgba(165,180,252,0.30); border-radius: 9px; cursor: pointer; font-size: 0.75em; line-height: 1.6; }
 #nav button:disabled { opacity: 0.4; cursor: default; }
-#counter { color: rgba(255,255,255,0.4); font-size: 0.9em; }
+#counter { color: rgba(255,255,255,0.4); font-size: 0.75em; }
 </style>
 </head>
 <body>
 <div id="slides"></div>
 <div id="nav">
-  <button id="prevBtn">← 前へ</button>
+  <button id="prevBtn">← prev</button>
   <span id="counter"></span>
-  <button id="nextBtn">次へ →</button>
+  <button id="nextBtn">next →</button>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
