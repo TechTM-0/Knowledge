@@ -86,6 +86,11 @@ function bindEvents() {
   });
 
   vectorSearchToggle.addEventListener('change', toggleVectorSearch);
+  document.getElementById('vectorThresholdSlider').addEventListener('input', e => {
+    state.vectorSearchThreshold = parseFloat(e.target.value);
+    document.getElementById('vectorThresholdValue').textContent = state.vectorSearchThreshold.toFixed(1);
+    applyVectorThreshold();
+  });
   document.getElementById('generateBtn').addEventListener('click', openGenerateModal);
   document.getElementById('generateCloseBtn').addEventListener('click', closeGenerateModal);
   document.getElementById('generateOverlay').addEventListener('click', closeGenerateModal);
@@ -229,11 +234,41 @@ async function searchFromApi(query) {
     ? `/api/vector-search?q=${encodeURIComponent(query)}`
     : `/api/notes?q=${encodeURIComponent(query)}`;
   const results = await api(endpoint);
-  applyCategory(results);
+  if (state.vectorSearchMode) {
+    state.vectorSearchResults = results;
+    applyVectorThreshold();
+  } else {
+    applyCategory(results);
+  }
+}
+
+function applyVectorThreshold() {
+  const results = state.vectorSearchResults;
+  if (!results.length) {
+    document.getElementById('vectorThresholdCount').textContent = '0';
+    applyCategory([]);
+    return;
+  }
+  const scores = results.map(n => n._rrf_score ?? 0);
+  const minS = Math.min(...scores);
+  const maxS = Math.max(...scores);
+  const threshold = minS + (maxS - minS) * state.vectorSearchThreshold;
+  const filtered = results.filter(n => (n._rrf_score ?? 0) >= threshold);
+  document.getElementById('vectorThresholdCount').textContent = filtered.length;
+  applyCategory(filtered);
 }
 
 function toggleVectorSearch() {
   state.vectorSearchMode = vectorSearchToggle.checked;
+  const row = document.getElementById('vectorThresholdRow');
+  row.classList.toggle('hidden', !state.vectorSearchMode);
+  if (!state.vectorSearchMode) {
+    state.vectorSearchResults = [];
+    state.vectorSearchThreshold = 0;
+    document.getElementById('vectorThresholdSlider').value = 0;
+    document.getElementById('vectorThresholdValue').textContent = '0.0';
+    document.getElementById('vectorThresholdCount').textContent = '-';
+  }
   const query = searchInput.value.trim();
   if (query) searchFromApi(query);
 }

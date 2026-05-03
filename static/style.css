@@ -201,6 +201,38 @@ label:has(#vectorSearchToggle:checked) .toggle-label {
   color: rgb(165, 180, 252);
 }
 
+/* ===== 閾値スライダー ===== */
+.threshold-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  display: block;
+}
+.threshold-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: rgb(99, 102, 241);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.threshold-slider::-webkit-slider-thumb:hover { background: rgb(165, 180, 252); }
+.threshold-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: rgb(99, 102, 241);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
 /* ===== スクロールバー ===== */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

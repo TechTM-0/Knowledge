@@ -36,6 +36,29 @@ def _note_to_text(title: str, content: str, format_type: str) -> str:
     return f"{title}\n{text}"
 
 
+def _fts_ranked_ids(q: str) -> list[int]:
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT rowid AS id FROM notes_fts WHERE notes_fts MATCH ? ORDER BY rank",
+            (q,)
+        ).fetchall()
+        conn.close()
+        return [row["id"] for row in rows]
+    except Exception:
+        return []
+
+
+def _vec_ranked_ids(q: str) -> list[int]:
+    if _matrix is None or not _note_ids:
+        return []
+    query_vec = _embed(q)
+    scores = _matrix @ query_vec
+    threshold = float(scores.min()) + (float(scores.max()) - float(scores.min())) * 0.15
+    ranked = np.argsort(scores)[::-1]
+    return [_note_ids[i] for i in ranked if scores[i] >= threshold]
+
+
 def load_cache():
     global _note_ids, _matrix, _query_cache
     conn = get_db()
@@ -99,14 +122,22 @@ def vector_search(q: str = ""):
         return []
     if q in _query_cache:
         return _query_cache[q]
-    if _matrix is None or len(_note_ids) == 0:
+
+    fts_ids = _fts_ranked_ids(q)
+    vec_ids = _vec_ranked_ids(q)
+
+    if not fts_ids and not vec_ids:
         return []
 
-    query_vec = _embed(q)
-    scores = _matrix @ query_vec  # コサイン類似度（L2正規化済みなので内積＝cos）
-    threshold = float(scores.max()) * 0.85
-    top_indices = np.argsort(scores)[::-1]
-    top_ids = [_note_ids[i] for i in top_indices if scores[i] >= threshold]
+    # Reciprocal Rank Fusion (k=60)
+    K = 60
+    rrf: dict[int, float] = {}
+    for rank, nid in enumerate(fts_ids):
+        rrf[nid] = rrf.get(nid, 0.0) + 1.0 / (K + rank)
+    for rank, nid in enumerate(vec_ids):
+        rrf[nid] = rrf.get(nid, 0.0) + 1.0 / (K + rank)
+
+    top_ids = sorted(rrf, key=lambda x: rrf[x], reverse=True)
 
     conn = get_db()
     placeholders = ",".join("?" * len(top_ids))
@@ -114,7 +145,7 @@ def vector_search(q: str = ""):
     conn.close()
 
     id_to_note = {row["id"]: row_to_note(row) for row in rows}
-    result = [id_to_note[tid] for tid in top_ids if tid in id_to_note]
+    result = [{**id_to_note[tid], "_rrf_score": rrf[tid]} for tid in top_ids if tid in id_to_note]
 
     _query_cache[q] = result
     return result

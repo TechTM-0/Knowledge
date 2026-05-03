@@ -11,4 +11,6 @@ export const state = {
   slideViewTab: 'slide',
   generateCancelled: false,
   vectorSearchMode: false,
+  vectorSearchThreshold: 0,
+  vectorSearchResults: [],
 };
