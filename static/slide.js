@@ -17,14 +17,14 @@ export function buildSlideHtml(htmlContent) {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #1a1a1a; color: #e0e0e0; font-family: system-ui, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+body { background: linear-gradient(135deg, #0a0a0f 0%, #111827 50%, #0f172a 100%); color: #f1f5f9; font-family: system-ui, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 #slides { flex: 1; min-height: 0; overflow-y: auto; padding: 32px; }
 .slide { display: none; }
 .slide.active { display: block; }
-#nav { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 32px; background: #111; border-top: 1px solid #333; }
-#nav button { padding: 8px 20px; background: #e87d0d; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+#nav { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 32px; background: rgba(255,255,255,0.04); border-top: 1px solid rgba(255,255,255,0.08); }
+#nav button { padding: 8px 20px; background: rgba(99,102,241,0.35); color: #e0e7ff; border: 1px solid rgba(165,180,252,0.30); border-radius: 9px; cursor: pointer; font-size: 0.9em; }
 #nav button:disabled { opacity: 0.4; cursor: default; }
-#counter { color: #888; font-size: 0.9em; }
+#counter { color: rgba(255,255,255,0.4); font-size: 0.9em; }
 </style>
 </head>
 <body>

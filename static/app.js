@@ -174,7 +174,7 @@ function showViewMode() {
   } else {
     hideSlide();
     noteContent.classList.remove('hidden');
-    noteContent.innerHTML = marked.parse(state.selectedNote?.content ?? '');
+    noteContent.innerHTML = renderMarkdown(state.selectedNote?.content ?? '');
     renderMathInElement(noteContent, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
   }
 }
@@ -215,7 +215,7 @@ function scheduleAutoSave() {
     });
     state.selectedNote = { ...updated, tags: currentTags };
     noteTitle.textContent = updated.title;
-    noteContent.innerHTML = marked.parse(content);
+    noteContent.innerHTML = renderMarkdown(content);
     renderMathInElement(noteContent, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
     const idx = state.notes.findIndex(n => n.id === updated.id);
     if (idx !== -1) state.notes[idx] = updated;
@@ -245,6 +245,17 @@ async function searchFromApi(query) {
   } else {
     applyCategory(results);
   }
+}
+
+// marked.js が $$...$$ / $...$ 内の _ をイタリック記法と解釈するのを防ぐ
+function renderMarkdown(content) {
+  const blocks = [];
+  const ph = (i) => `\x00M${i}\x00`;
+  const s = content
+    .replace(/\$\$([\s\S]+?)\$\$/g, (m) => { blocks.push(m); return ph(blocks.length - 1); })
+    .replace(/\$([^\$\n]+?)\$/g,    (m) => { blocks.push(m); return ph(blocks.length - 1); });
+  let html = marked.parse(s);
+  return html.replace(/\x00M(\d+)\x00/g, (_, i) => blocks[i]);
 }
 
 const SIGNAL_STEPS  = [1.0, 1.1, 1.3, 1.5, 2.0];

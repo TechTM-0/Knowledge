@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## サーバー起動手順（必読）
+
+```powershell
+# 仮想環境の uvicorn で起動する。python main.py では起動しない
+.venv\Scripts\uvicorn.exe main:app --host 127.0.0.1 --port 8000
+```
+
+- 仮想環境は `.venv\` にある。依存パッケージはすべてここに入っている
+- `python main.py` は uvicorn.run() がないため何も起動しない
+- スクリプト（`update_slides.py` 等）も `.venv\Scripts\python.exe` で実行する
+
+---
+
 ## プロジェクト概要
 
 個人用ナレッジ管理ツール。メモ・アイデア・調査結果の整理・検索・活用を目的とする。
