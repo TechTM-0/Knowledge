@@ -117,7 +117,14 @@ function renderNoteList() {
     return;
   }
 
-  noteList.innerHTML = state.filteredNotes.map(note => `
+  const showScore = state.vectorSearchMode && state.filteredNotes.some(n => n._rrf_score != null);
+  const maxScore  = showScore ? Math.max(...state.filteredNotes.map(n => n._rrf_score ?? 0)) : 0;
+
+  noteList.innerHTML = state.filteredNotes.map(note => {
+    const rank = showScore && note._rrf_score != null
+      ? `<span class="match-badge">${state.filteredNotes.indexOf(note) + 1}位</span>`
+      : '';
+    return `
     <div
       class="glass-card p-3.5 ${note.id === state.selectedNote?.id ? 'glass-card--active' : ''}"
       data-id="${note.id}"
@@ -128,12 +135,14 @@ function renderNoteList() {
       <div class="flex items-center gap-2 mb-2">
         <span class="text-xs text-white/35">${note.created_at.slice(0, 10)}</span>
         <span class="tag">${categoryLabel(note.category)}</span>
+        ${rank}
       </div>
       <div class="flex flex-wrap gap-1">
         ${note.tags.slice(0, 3).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('')}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // ===== ノート選択 =====

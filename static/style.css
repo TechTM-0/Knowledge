@@ -132,6 +132,15 @@ button.tag:hover {
   color: #c7d2fe !important;
 }
 
+/* ベクトル検索順位表示 */
+.match-badge {
+  margin-left: auto;
+  font-size: 10px;
+  color: #a5b4fc;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* select に .tag を適用したときのオプション背景 */
 select.tag {
   cursor: pointer;
