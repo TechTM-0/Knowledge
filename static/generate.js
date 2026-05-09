@@ -75,6 +75,7 @@ export async function submitGenerate(onSuccess) {
       return;
     } catch (e) {
       lastError = e;
+      if (e.status === 429) break;  // クォータ超過はリトライしない
       if (attempt < MAX_RETRIES) await new Promise(r => setTimeout(r, 2000));
     }
   }

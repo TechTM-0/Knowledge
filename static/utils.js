@@ -5,7 +5,13 @@ export async function api(path, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).detail ?? ''; } catch {}
+    const err = new Error(detail || `API error: ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
   if (res.status === 204) return null;
   return res.json();
 }

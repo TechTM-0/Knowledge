@@ -2,6 +2,7 @@ import os
 import re
 import json
 from google import genai
+from google.genai import errors as genai_errors
 from fastapi import APIRouter, HTTPException
 from database import get_db
 from schemas import GenerateRequest
@@ -15,7 +16,6 @@ def generate_note(req: GenerateRequest):
     if not api_key:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY が設定されていません")
 
-    # テンプレートを取得
     conn = get_db()
     row = conn.execute("SELECT * FROM templates WHERE id = ?", (req.template_id,)).fetchone()
     conn.close()
@@ -34,10 +34,20 @@ def generate_note(req: GenerateRequest):
 {req.prompt}"""
 
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model=req.model,
-        contents=prompt,
-    )
+    try:
+        response = client.models.generate_content(
+            model=req.model,
+            contents=prompt,
+        )
+    except genai_errors.ClientError as e:
+        code = e.code if hasattr(e, "code") else 400
+        if code == 429:
+            raise HTTPException(status_code=429, detail=f"Gemini API のクォータ上限に達しました。しばらく待ってから再試行してください。（モデル: {req.model}）")
+        raise HTTPException(status_code=code, detail=f"Gemini API エラー: {e.message if hasattr(e, 'message') else str(e)}")
+    except genai_errors.ServerError as e:
+        raise HTTPException(status_code=502, detail=f"Gemini API サーバーエラー: {e.message if hasattr(e, 'message') else str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"予期しないエラー: {str(e)}")
 
     content = response.text.strip()
     if format_type == "slide":
