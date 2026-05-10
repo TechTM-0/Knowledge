@@ -4,8 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 会話開始時にやること（必読）
 
-1. **未着手タスクを把握する** — `C:\Users\t-mur\.claude\projects\C--Users-t-mur-Knowledge\memory\project_pending_tasks.md` を参照する
-2. **ベクトル検索の作業前** — `docs/vector_search_issues.md` を必ず読む
+1. **タスクの状況を把握する** — `docs/TASKS.md` を読む（🚧 実装中・✅ 完了済み・❌ 未実装が一覧になっている）
+
+## docs/TASKS.md の更新ルール
+
+- **実装を始めるとき** — 対象タスクを `🚧 実装中` セクションに移し、合意済み仕様・変更ファイルと内容・残作業を具体的に書く（次回の Claude が読んで即着手できるレベルで）
+- **ファイルを1つ実装し終えるたびに** — そのファイルの「状態」を `✅ 完了` に更新する
+- **タスク全体が完了したとき** — `✅ 完了済み` テーブルに移し、実装場所と完了日を記録する
 
 ### サーバー起動が必要な場合
 
