@@ -4,15 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 会話開始時にやること（必読）
 
-1. **タスクの状況を把握する** — `docs/TASKS.md` を読む（🚧 実装中・✅ 完了済み・❌ 未実装が一覧になっている）
+1. **タスクの状況を把握する** — `docs/open-tasks.md` を読む（「次の一手」と残タスクの一覧がある）
+2. 着手するタスクが決まったら、**その issue の本文とコメントを読む** — `gh issue view <番号> --comments`
 
-## docs/TASKS.md の更新ルール
+## タスク管理のルール
 
-- **実装を始めるとき** — 対象タスクを `🚧 実装中` セクションに移し、合意済み仕様・変更ファイルと内容・残作業を具体的に書く（次回の Claude が読んで即着手できるレベルで）
-- **ファイルを1つ実装し終えるたびに** — そのファイルの「状態」を `✅ 完了` に更新する
-- **タスク全体が完了したとき** — `✅ 完了済み` テーブルに移し、実装場所と完了日を記録する
+**正本は GitHub Issues**（https://github.com/TechTM-0/Knowledge/issues）。
+`docs/open-tasks.md` は issue への薄いポインタでしかない。仕様をこのファイルに書かない。
+
+- **仕様・完了条件・変更ファイル** — issue 本文に書く
+- **設計判断・検証の結論・なぜその方式を選んだか** — 該当 issue の**コメント**に経緯として残す。後から「なぜこうなっているのか」を追えるようにするため
+- **新しいタスクが出てきたとき** — issue を立てる。親子関係があるものは sub-issue API で紐付ける
+
+  ```bash
+  # sub_issue_id は issue 番号ではなく database id。整数で送るため -f ではなく -F を使う
+  cid=$(gh api repos/TechTM-0/Knowledge/issues/<子番号> --jq '.id')
+  gh api --method POST repos/TechTM-0/Knowledge/issues/<親番号>/sub_issues -F sub_issue_id=$cid
+  ```
+
+- **issue を閉じたとき** — `docs/open-tasks.md` のチェックを付けて「完了タスク」へ移す
+- **着手対象が変わったとき** — `docs/open-tasks.md` の「次の一手」を書き換える
 
 ### サーバー起動が必要な場合
+
+```powershell
+# 起動・停止・状態確認はこのスクリプト経由で行う
+powershell -ExecutionPolicy Bypass -File server.ps1 start
+powershell -ExecutionPolicy Bypass -File server.ps1 stop
+powershell -ExecutionPolicy Bypass -File server.ps1 status
+```
+
+ログをその場で見たい場合のみ uvicorn を直接動かす：
 
 ```powershell
 # 仮想環境の uvicorn で起動する。python main.py では起動しない
@@ -21,7 +43,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - 仮想環境は `.venv\` にある。依存パッケージはすべてここに入っている
 - `python main.py` は uvicorn.run() がないため何も起動しない
-- スクリプト（`update_slides.py` 等）も `.venv\Scripts\python.exe` で実行する
+- Python スクリプトは `.venv\Scripts\python.exe` で実行する
+- **Claude が起動したサーバーはセッション終了時に落ちる。** ユーザーが継続的に使う場合はデスクトップの「Knowledge サーバー」ショートカット（`server-gui.ps1`）から起動してもらう
 
 ---
 

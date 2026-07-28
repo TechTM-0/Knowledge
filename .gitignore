@@ -36,5 +36,5 @@ Thumbs.db
 # Claude Code ローカル設定
 .claude/
 
-# Claude との作業メモ（ローカル管理）
-docs/TASKS.md
+# 個人メモ（ローカル管理）
+memo.txt
