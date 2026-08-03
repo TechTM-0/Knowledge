@@ -7,21 +7,30 @@ issueを閉じたら、ここのチェックを付けて「完了タスク」へ
 
 ## 次の一手
 
-→ **[#7 画像挿入 + GitHub 自動アップロード](https://github.com/TechTM-0/Knowledge/issues/7)**
-合意済みの仕様・必要な環境変数・変更ファイル5点の表はすべて issue 本文にある。`routers/images.py` の新規作成から着手する。
+→ **実装ではなく方針決定が先。[#17](https://github.com/TechTM-0/Knowledge/issues/17) / [#18](https://github.com/TechTM-0/Knowledge/issues/18) / [#19](https://github.com/TechTM-0/Knowledge/issues/19) の3件は「検討中」issue で、選択肢を記録してあるだけ。まだ決めていない。**
 
-着手前に `.env` へ `GITHUB_TOKEN`（`contents: write` スコープ）と `GITHUB_REPO` の追加が必要。
+- **[#17 埋め込みバックエンド](https://github.com/TechTM-0/Knowledge/issues/17) から決めるのが効率的。** #15 の再インデックスコストが直結し、#16 は決定次第で問題ごと消滅する
+- **[#18 チャットUIの置き場所](https://github.com/TechTM-0/Knowledge/issues/18) と [#19 生成バックエンド](https://github.com/TechTM-0/Knowledge/issues/19) は互いを制約するのでセットで決める。** 組み合わせの成立表は #18 の本文にある。ここが決まるまで #1 / #2 は着手しない
+
+決定を待たずに動かせる実装は [#15 チャンク分割](https://github.com/TechTM-0/Knowledge/issues/15)（設計は埋め込みバックエンドに依存しない）。ただし #17 を先に決めたほうが試行錯誤を回しやすい。
+
+[#7 画像挿入](https://github.com/TechTM-0/Knowledge/issues/7) は着手途中で中断している。再開時は `.env` へ `GITHUB_TOKEN`（`contents: write` スコープ）と `GITHUB_REPO` の追加から。
 
 ## 残タスク
 
-- [ ] [#7 画像挿入 + GitHub 自動アップロード](https://github.com/TechTM-0/Knowledge/issues/7) 〈着手中〉
 - [ ] [#4 ベクトル検索の精度改善（エピック）](https://github.com/TechTM-0/Knowledge/issues/4)
-  - [ ] [#9 タイトルと本文を別 embedding にして重み付け](https://github.com/TechTM-0/Knowledge/issues/9) 〈優先度中・再インデックス必要〉
+  - [ ] [#17 埋め込みは Gemini API のままか、ローカルモデルか](https://github.com/TechTM-0/Knowledge/issues/17) 〈**検討中**・#15 / #16 の前提〉
+  - [ ] [#15 チャンク単位に分割して embedding](https://github.com/TechTM-0/Knowledge/issues/15) 〈#17 決定後が望ましい・再インデックス必要〉
+  - [ ] [#16 embedding 失敗の握り潰しを直す](https://github.com/TechTM-0/Knowledge/issues/16) 〈#17 次第で消滅〉
+  - [ ] [#9 タイトルと本文を別 embedding にして重み付け](https://github.com/TechTM-0/Knowledge/issues/9) 〈#15 の後に設計を決める〉
   - [ ] [#10 クエリ拡張](https://github.com/TechTM-0/Knowledge/issues/10) 〈優先度低・latency増〉
 - [ ] [#5 AI×ドキュメント統合（エピック）](https://github.com/TechTM-0/Knowledge/issues/5)
-  - [ ] [#1 チャットラリー→ノート化](https://github.com/TechTM-0/Knowledge/issues/1) 〈この3本の中では最初に着手する〉
-  - [ ] [#2 RAGチャット](https://github.com/TechTM-0/Knowledge/issues/2) 〈#1 が前提〉
-  - [ ] [#3 ノート統合](https://github.com/TechTM-0/Knowledge/issues/3) 〈#2 の配管の応用〉
+  - [ ] [#18 チャットUIをアプリ内かターミナルか](https://github.com/TechTM-0/Knowledge/issues/18) 〈**検討中**・#19 とセット・#1 の要否が変わる〉
+  - [ ] [#19 生成側を Gemini API / MCP / headless のどれか](https://github.com/TechTM-0/Knowledge/issues/19) 〈**検討中**・#18 とセット〉
+  - [ ] [#1 チャットラリー→ノート化](https://github.com/TechTM-0/Knowledge/issues/1) 〈#18 / #19 決定まで着手しない。不要になる可能性あり〉
+  - [ ] [#2 RAGチャット](https://github.com/TechTM-0/Knowledge/issues/2) 〈#1 #15 #18 #19 が前提〉
+  - [ ] [#3 ノート統合](https://github.com/TechTM-0/Knowledge/issues/3) 〈**検索精度の施策ではない**・執筆支援として再定義。#2 への依存は不要と判明〉
+- [ ] [#7 画像挿入 + GitHub 自動アップロード](https://github.com/TechTM-0/Knowledge/issues/7) 〈中断中〉
 - [ ] [#6 ノート整理・閲覧まわりの機能追加（エピック）](https://github.com/TechTM-0/Knowledge/issues/6)
   - [ ] [#11 カテゴリ廃止 → タグ検索一本化](https://github.com/TechTM-0/Knowledge/issues/11) 〈DBマイグレーション必要〉
   - [ ] [#12 ノート間リンク記法](https://github.com/TechTM-0/Knowledge/issues/12)
