@@ -14,7 +14,7 @@ issueを閉じたら、ここのチェックを付けて「完了タスク」へ
 
 決定を待たずに動かせる実装は [#15 チャンク分割](https://github.com/TechTM-0/Knowledge/issues/15)（設計は埋め込みバックエンドに依存しない）。ただし #17 を先に決めたほうが試行錯誤を回しやすい。
 
-[#7 画像挿入](https://github.com/TechTM-0/Knowledge/issues/7) は着手途中で中断している。再開時は `.env` へ `GITHUB_TOKEN`（`contents: write` スコープ）と `GITHUB_REPO` の追加から。
+[#7 画像挿入](https://github.com/TechTM-0/Knowledge/issues/7) は着手途中で中断している。再開時は `.env` へ `GITHUB_TOKEN`（`contents: write` スコープ）と `GITHUB_REPO` の追加から。**2026-08-06 に画像まわりの新issue 2件（[#20](https://github.com/TechTM-0/Knowledge/issues/20) / [#21](https://github.com/TechTM-0/Knowledge/issues/21)）が立ち、どちらも #7 が前提になったため優先度が上がった。**
 
 ## 残タスク
 
@@ -30,7 +30,9 @@ issueを閉じたら、ここのチェックを付けて「完了タスク」へ
   - [ ] [#1 チャットラリー→ノート化](https://github.com/TechTM-0/Knowledge/issues/1) 〈#18 / #19 決定まで着手しない。不要になる可能性あり〉
   - [ ] [#2 RAGチャット](https://github.com/TechTM-0/Knowledge/issues/2) 〈#1 #15 #18 #19 が前提〉
   - [ ] [#3 ノート統合](https://github.com/TechTM-0/Knowledge/issues/3) 〈**検索精度の施策ではない**・執筆支援として再定義。#2 への依存は不要と判明〉
-- [ ] [#7 画像挿入 + GitHub 自動アップロード](https://github.com/TechTM-0/Knowledge/issues/7) 〈中断中〉
+- [ ] [#7 画像挿入 + GitHub 自動アップロード](https://github.com/TechTM-0/Knowledge/issues/7) 〈中断中・#20 / #21 の前提〉
+- [ ] [#21 手書きメモ・図を画像から読み取ってノート本文に変換](https://github.com/TechTM-0/Knowledge/issues/21) 〈#7 が前提・既存の生成経路にほぼそのまま乗る〉
+- [ ] [#20 手書き図を AI で清書して表示できるか](https://github.com/TechTM-0/Knowledge/issues/20) 〈**検討中**・実現性未検証。#7 が前提・手書き図1枚で実測すれば判定できる〉
 - [ ] [#6 ノート整理・閲覧まわりの機能追加（エピック）](https://github.com/TechTM-0/Knowledge/issues/6)
   - [ ] [#11 カテゴリ廃止 → タグ検索一本化](https://github.com/TechTM-0/Knowledge/issues/11) 〈DBマイグレーション必要〉
   - [ ] [#12 ノート間リンク記法](https://github.com/TechTM-0/Knowledge/issues/12)
